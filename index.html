@@ -601,27 +601,43 @@
         // Carica logo e carosello dal backend
         async function loadMediaContent() {
             try {
+                console.log('🔄 Caricamento media dal backend...');
                 const response = await fetch(`${API_BASE}/media`);
+                console.log('📡 Response status:', response.status);
+                
                 if (response.ok) {
                     const media = await response.json();
+                    console.log('📦 Media ricevuti:', media);
                     
                     // Carica logo
                     if (media.logo) {
+                        console.log('🎨 Logo trovato:', media.logo);
                         const customLogo = document.getElementById('custom-logo');
                         const defaultLogo = document.getElementById('default-logo');
+                        console.log('🖼️ Impostando src del logo a:', media.logo);
                         customLogo.src = media.logo; // Usa direttamente il path dal backend
                         customLogo.classList.remove('hidden');
                         defaultLogo.classList.add('hidden');
+                        console.log('✅ Logo sostituito');
+                    } else {
+                        console.log('❌ Nessun logo trovato nel response');
                     }
                     
                     // Carica carosello
                     if (media.carousel && media.carousel.length > 0) {
+                        console.log('🎠 Carosello trovato:', media.carousel.length, 'immagini');
                         carouselImages = media.carousel;
                         setupCarousel();
+                    } else {
+                        console.log('❌ Nessuna immagine carosello trovata');
                     }
+                } else {
+                    console.error('❌ Errore response API:', response.status, response.statusText);
+                    const errorText = await response.text();
+                    console.error('❌ Dettaglio errore:', errorText);
                 }
             } catch (error) {
-                console.error('Errore caricamento media:', error);
+                console.error('💥 Errore caricamento media:', error);
             }
         }
 

@@ -475,6 +475,8 @@ db.run(`
 
 // GET - Ottieni logo e immagini carosello
 app.get('/api/media', (req, res) => {
+  console.log('🔄 API /media chiamata');
+  
   const queries = {
     logo: 'SELECT * FROM media WHERE type = "logo" AND active = 1 ORDER BY created_at DESC LIMIT 1',
     carousel: 'SELECT * FROM media WHERE type = "carousel" AND active = 1 ORDER BY position, created_at'
@@ -484,19 +486,27 @@ app.get('/api/media', (req, res) => {
   let completed = 0;
   
   Object.keys(queries).forEach(type => {
+    console.log(`📊 Eseguendo query ${type}:`, queries[type]);
+    
     db.all(queries[type], [], (err, rows) => {
       if (err) {
-        console.error(`Errore caricamento ${type}:`, err.message);
+        console.error(`❌ Errore caricamento ${type}:`, err.message);
       } else {
+        console.log(`✅ Query ${type} completata. Rows found:`, rows.length);
+        console.log(`📦 Dati ${type}:`, rows);
+        
         if (type === 'logo') {
           media.logo = rows.length > 0 ? rows[0].url : null;
+          console.log(`🎨 Logo impostato:`, media.logo);
         } else {
           media.carousel = rows;
+          console.log(`🎠 Carosello impostato:`, rows.length, 'immagini');
         }
       }
       
       completed++;
       if (completed === Object.keys(queries).length) {
+        console.log(`📤 Inviando response:`, media);
         res.json(media);
       }
     });
@@ -580,6 +590,22 @@ app.delete('/api/media/carousel/:id', (req, res) => {
     }
     
     res.json({ message: 'Immagine eliminata con successo' });
+  });
+});
+
+// DEBUG - Endpoint per controllare tutti i media
+app.get('/api/media/debug', (req, res) => {
+  db.all('SELECT * FROM media ORDER BY created_at DESC', [], (err, rows) => {
+    if (err) {
+      console.error('Errore debug media:', err.message);
+      res.status(500).json({ error: 'Errore database', details: err.message });
+    } else {
+      res.json({
+        total_rows: rows.length,
+        media: rows,
+        tables_info: 'SELECT name FROM sqlite_master WHERE type="table"'
+      });
+    }
   });
 });
 
