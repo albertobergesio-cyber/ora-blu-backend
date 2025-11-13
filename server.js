@@ -453,6 +453,43 @@ app.get('/api/stats/detailed', (req, res) => {
     });
 });
 
+// GET - Statistiche base per il frontend
+app.get('/api/stats', (req, res) => {
+  const queries = {
+    totalSpaces: 'SELECT COUNT(*) as count FROM spaces',
+    adoptedSpaces: 'SELECT COUNT(*) as count FROM spaces WHERE adopted = 1',
+    totalRaised: 'SELECT COALESCE(SUM(s.cost), 0) as total FROM spaces s WHERE s.adopted = 1',
+    totalGoal: 'SELECT SUM(cost) as total FROM spaces'
+  };
+  
+  const stats = {};
+  const promises = [];
+  
+  Object.keys(queries).forEach(key => {
+    promises.push(new Promise((resolve, reject) => {
+      db.get(queries[key], [], (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          stats[key] = row.count !== undefined ? row.count : row.total;
+          resolve();
+        }
+      });
+    }));
+  });
+  
+  Promise.all(promises)
+    .then(() => {
+      // Calcola la percentuale di progresso
+      stats.progressPercentage = stats.totalGoal > 0 ? (stats.totalRaised / stats.totalGoal) * 100 : 0;
+      res.json(stats);
+    })
+    .catch(err => {
+      console.error('Errore recupero statistiche:', err.message);
+      res.status(500).json({ error: 'Errore recupero statistiche' });
+    });
+});
+
 // Dashboard admin moderna
 app.get('/admin', (req, res) => {
   res.send(`
