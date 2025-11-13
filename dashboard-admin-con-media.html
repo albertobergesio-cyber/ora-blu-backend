@@ -6,6 +6,18 @@
     <title>Dashboard Admin - L'Ora Blu</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script>
+        // Test Alpine.js loading
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                if (window.Alpine) {
+                    console.log('✅ Alpine.js caricato correttamente');
+                } else {
+                    console.error('❌ Alpine.js NON caricato!');
+                }
+            }, 100);
+        });
+    </script>
     <style>
         [x-cloak] { display: none !important; }
         .tab-active { @apply bg-blue-600 text-white; }
@@ -13,7 +25,7 @@
     </style>
 </head>
 <body class="bg-gray-100">
-    <div x-data="adminPanel()" x-cloak>
+    <div x-data="adminPanel()" x-init="console.log('🚀 Alpine.js inizializzato!', $data)">
         <!-- Header -->
         <header class="bg-white shadow-sm border-b">
             <div class="max-w-7xl mx-auto px-4 py-6">
@@ -203,7 +215,9 @@
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button @click="openSpaceModal(space)" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                                        <button @click="console.log('🖱️ CLICK rilevato!'); openSpaceModal(space)" 
+                                                onclick="console.log('📍 onclick rilevato!'); alert('Click funziona!');"
+                                                class="text-indigo-600 hover:text-indigo-900 mr-3">
                                             🖼️ Cambia Foto
                                         </button>
                                         <span x-show="space.adopted" class="text-green-600 text-sm">

@@ -643,26 +643,46 @@
 
         // Setup del carosello
         function setupCarousel() {
+            console.log('🎠 Setup carosello con immagini:', carouselImages);
+            
             const carouselSection = document.getElementById('carousel-section');
             const slidesContainer = document.getElementById('carousel-slides');
             const dotsContainer = document.getElementById('carousel-dots');
             
-            if (carouselImages.length === 0) return;
+            if (carouselImages.length === 0) {
+                console.log('❌ Nessuna immagine carosello disponibile');
+                return;
+            }
             
             // Mostra la sezione carosello
             carouselSection.style.display = 'block';
+            console.log('✅ Sezione carosello mostrata');
+            
+            // Debug delle immagini
+            carouselImages.forEach((image, index) => {
+                console.log(`🖼️ Immagine ${index + 1}:`, {
+                    url: image.url,
+                    caption: image.caption,
+                    description: image.description
+                });
+            });
             
             // Genera slide
             slidesContainer.innerHTML = carouselImages.map((image, index) => `
                 <div class="min-w-full h-full relative">
-                    <img src="${image.url}" alt="${image.caption || 'Immagine carosello'}" 
-                         class="w-full h-full object-cover">
+                    <img src="${image.url}" 
+                         alt="${image.caption || 'Immagine carosello'}" 
+                         class="w-full h-full object-cover"
+                         onload="console.log('✅ Immagine caricata:', '${image.url}')"
+                         onerror="console.error('❌ Errore caricamento immagine:', '${image.url}')">
                     <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
                         <h3 class="text-white font-bold text-xl">${image.caption || ''}</h3>
                         <p class="text-white/90">${image.description || ''}</p>
                     </div>
                 </div>
             `).join('');
+            
+            console.log('🎠 HTML carosello generato');
             
             // Genera dots
             dotsContainer.innerHTML = carouselImages.map((_, index) => `
@@ -677,6 +697,8 @@
                     goToSlide(currentSlide);
                 }, 5000);
             }
+            
+            console.log('🎠 Carosello setup completato');
         }
 
         // Naviga a una slide specifica
