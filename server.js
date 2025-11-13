@@ -92,14 +92,18 @@ function setupDatabase() {
 
 // Popola dati iniziali
 function populateInitialData() {
+  console.log('🔍 Controllo se ci sono spazi nel database...');
+  
   db.get('SELECT COUNT(*) as count FROM spaces', (err, row) => {
     if (err) {
       console.error('❌ Errore controllo dati:', err.message);
       return;
     }
     
+    console.log(`📊 Spazi trovati nel database: ${row.count}`);
+    
     if (row.count === 0) {
-      console.log('🔄 Popolamento dati iniziali...');
+      console.log('🔄 Database vuoto, popolamento dati iniziali...');
       const spaces = [
         { name: 'Bagno 1', description: 'Contribuirai ad arredare il bagno con lavandino, tazza, bidet e piatto doccia', cost: 3000 },
         { name: 'Vacanza', description: 'Manderemo i bambini in gita per qualche giorno durante il trasloco', cost: 5000 },
@@ -124,11 +128,25 @@ function populateInitialData() {
       ];
       
       const insertStmt = db.prepare('INSERT INTO spaces (name, description, cost) VALUES (?, ?, ?)');
-      spaces.forEach(space => {
-        insertStmt.run([space.name, space.description, space.cost]);
+      let inserted = 0;
+      
+      spaces.forEach((space, index) => {
+        insertStmt.run([space.name, space.description, space.cost], function(err) {
+          if (err) {
+            console.error(`❌ Errore inserimento spazio ${space.name}:`, err.message);
+          } else {
+            inserted++;
+            console.log(`✅ ${inserted}/${spaces.length}: ${space.name} inserito`);
+          }
+        });
       });
-      insertStmt.finalize(() => {
-        console.log(`🎉 Inseriti ${spaces.length} spazi iniziali!`);
+      
+      insertStmt.finalize((err) => {
+        if (err) {
+          console.error('❌ Errore finalizzazione inserimenti:', err.message);
+        } else {
+          console.log(`🎉 Processo inserimento completato! Inseriti ${inserted}/${spaces.length} spazi`);
+        }
       });
     } else {
       console.log(`ℹ️ Database già popolato con ${row.count} spazi.`);
@@ -590,6 +608,23 @@ app.delete('/api/media/carousel/:id', (req, res) => {
     }
     
     res.json({ message: 'Immagine eliminata con successo' });
+  });
+});
+
+// DEBUG - Endpoint per forzare popolamento database
+app.post('/api/admin/populate', (req, res) => {
+  console.log('🔄 Forzando popolamento database...');
+  
+  // Prima elimina tutti i dati esistenti
+  db.run('DELETE FROM spaces', (err) => {
+    if (err) {
+      console.error('❌ Errore pulizia database:', err.message);
+      res.status(500).json({ error: 'Errore pulizia database' });
+    } else {
+      console.log('🧹 Database pulito, avvio popolamento...');
+      populateInitialData();
+      res.json({ message: 'Popolamento database avviato, controlla i log del server' });
+    }
   });
 });
 
