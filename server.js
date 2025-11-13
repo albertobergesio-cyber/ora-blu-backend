@@ -99,56 +99,6 @@ app.get('/api/spaces', (req, res) => {
   });
 });
 
-// GET - Ottieni dettagli di un singolo spazio
-app.get('/api/spaces/:id', (req, res) => {
-  const spaceId = req.params.id;
-  
-  const query = `
-    SELECT s.*, 
-           a.sponsor_name, a.sponsor_email, a.sponsor_phone, 
-           a.wants_to_help, a.payment_proof_url, a.status as adoption_status,
-           a.created_at as adoption_date, a.notes
-    FROM spaces s
-    LEFT JOIN adoptions a ON s.id = a.space_id AND s.adopted = 1
-    WHERE s.id = ?
-  `;
-  
-  db.get(query, [spaceId], (err, row) => {
-    if (err) {
-      console.error('Errore recupero spazio:', err.message);
-      res.status(500).json({ error: 'Errore del database' });
-      return;
-    }
-    
-    if (!row) {
-      res.status(404).json({ error: 'Spazio non trovato' });
-      return;
-    }
-    
-    const space = {
-      id: row.id,
-      name: row.name,
-      description: row.description,
-      cost: row.cost,
-      adopted: Boolean(row.adopted),
-      adoptedBy: row.sponsor_name,
-      imageUrl: row.image_url,
-      adoption: row.sponsor_name ? {
-        sponsorName: row.sponsor_name,
-        sponsorEmail: row.sponsor_email,
-        sponsorPhone: row.sponsor_phone,
-        wantsToHelp: Boolean(row.wants_to_help),
-        paymentProofUrl: row.payment_proof_url,
-        status: row.adoption_status,
-        adoptionDate: row.adoption_date,
-        notes: row.notes
-      } : null
-    };
-    
-    res.json(space);
-  });
-});
-
 // POST - Adotta uno spazio
 app.post('/api/spaces/:id/adopt', upload.single('paymentProof'), (req, res) => {
   const spaceId = req.params.id;
@@ -288,41 +238,6 @@ app.get('/api/adoptions', (req, res) => {
   });
 });
 
-// PUT - Aggiorna stato adozione (admin)
-app.put('/api/adoptions/:id/status', (req, res) => {
-  const adoptionId = req.params.id;
-  const { status, notes } = req.body;
-  
-  const allowedStatuses = ['pending', 'confirmed', 'completed', 'cancelled'];
-  if (!allowedStatuses.includes(status)) {
-    res.status(400).json({ error: 'Status non valido' });
-    return;
-  }
-  
-  db.run(
-    'UPDATE adoptions SET status = ?, notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-    [status, notes, adoptionId],
-    function(err) {
-      if (err) {
-        console.error('Errore aggiornamento stato:', err.message);
-        res.status(500).json({ error: 'Errore aggiornamento stato' });
-        return;
-      }
-      
-      if (this.changes === 0) {
-        res.status(404).json({ error: 'Adozione non trovata' });
-        return;
-      }
-      
-      res.json({
-        message: 'Stato aggiornato con successo',
-        adoptionId: adoptionId,
-        status: status
-      });
-    }
-  );
-});
-
 // GET - Statistiche campagna
 app.get('/api/stats', (req, res) => {
   const queries = {
@@ -361,9 +276,7 @@ app.get('/api/stats', (req, res) => {
     });
 });
 
-// =================
-// ADMIN DASHBOARD HTML
-// =================
+// Dashboard admin semplice
 app.get('/admin', (req, res) => {
   res.send(`
     <!DOCTYPE html>
@@ -373,306 +286,71 @@ app.get('/admin', (req, res) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Admin Dashboard - L'Ora Blu</title>
         <script src="https://cdn.tailwindcss.com"></script>
-        <script>
-            tailwind.config = {
-                theme: {
-                    extend: {
-                        colors: {
-                            'ora-blue': '#64748b',
-                            'ora-orange': '#ea580c'
-                        }
-                    }
-                }
-            }
-        </script>
     </head>
-    <body class="bg-gray-50">
-        <div class="container mx-auto p-6">
-            <h1 class="text-3xl font-bold text-ora-blue mb-8">Dashboard Admin - L'Ora Blu</h1>
-            
-            <!-- Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <h3 class="text-lg font-semibold text-gray-700">Spazi Totali</h3>
-                    <p class="text-2xl font-bold text-ora-orange" id="totalSpaces">-</p>
-                </div>
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <h3 class="text-lg font-semibold text-gray-700">Spazi Adottati</h3>
-                    <p class="text-2xl font-bold text-green-600" id="adoptedSpaces">-</p>
-                </div>
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <h3 class="text-lg font-semibold text-gray-700">Raccolto</h3>
-                    <p class="text-2xl font-bold text-ora-blue" id="totalRaised">-</p>
-                </div>
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <h3 class="text-lg font-semibold text-gray-700">Volontari</h3>
-                    <p class="text-2xl font-bold text-purple-600" id="volunteers">-</p>
-                </div>
+    <body class="bg-gray-50 p-8">
+        <h1 class="text-3xl font-bold mb-8">Dashboard Admin - L'Ora Blu</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-lg font-semibold text-gray-700">Spazi Adottati</h3>
+                <p class="text-2xl font-bold text-green-600" id="adoptedSpaces">-</p>
             </div>
-
-            <!-- Tabs -->
-            <div class="mb-6">
-                <nav class="flex space-x-8">
-                    <button class="tab-btn py-2 px-4 border-b-2 font-medium text-sm border-ora-orange text-ora-orange" onclick="showTab('spaces')">
-                        Gestione Spazi
-                    </button>
-                    <button class="tab-btn py-2 px-4 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700" onclick="showTab('adoptions')">
-                        Adozioni
-                    </button>
-                </nav>
-            </div>
-
-            <!-- Spaces Tab -->
-            <div id="spaces-tab" class="tab-content">
-                <div class="bg-white rounded-lg shadow overflow-hidden">
-                    <table class="min-w-full">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spazio</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Costo</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Immagine</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
-                            </tr>
-                        </thead>
-                        <tbody id="spaces-table" class="bg-white divide-y divide-gray-200">
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Adoptions Tab -->
-            <div id="adoptions-tab" class="tab-content hidden">
-                <div class="bg-white rounded-lg shadow overflow-hidden">
-                    <table class="min-w-full">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spazio</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sponsor</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contatti</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Volontario</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
-                            </tr>
-                        </thead>
-                        <tbody id="adoptions-table" class="bg-white divide-y divide-gray-200">
-                        </tbody>
-                    </table>
-                </div>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-lg font-semibold text-gray-700">Raccolto</h3>
+                <p class="text-2xl font-bold text-blue-600" id="totalRaised">-</p>
             </div>
         </div>
 
-        <!-- Modal per upload immagine -->
-        <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-            <div class="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-                <h3 class="text-lg font-semibold mb-4">Carica Immagine Cantiere</h3>
-                <form id="imageForm" enctype="multipart/form-data">
-                    <input type="hidden" id="spaceId" name="spaceId">
-                    <input type="file" id="imageFile" name="image" accept="image/*" class="mb-4 w-full">
-                    <div class="flex gap-3">
-                        <button type="button" onclick="closeImageModal()" class="px-4 py-2 bg-gray-300 rounded">Annulla</button>
-                        <button type="submit" class="px-4 py-2 bg-ora-orange text-white rounded">Carica</button>
-                    </div>
-                </form>
-            </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold mb-4">Spazi</h2>
+            <div id="spacesList"></div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mt-6">
+            <h2 class="text-xl font-bold mb-4">Adozioni</h2>
+            <div id="adoptionsList"></div>
         </div>
 
         <script>
-            let currentTab = 'spaces';
-            
-            async function loadStats() {
+            async function loadData() {
                 try {
-                    const response = await fetch('/api/stats');
-                    const stats = await response.json();
-                    document.getElementById('totalSpaces').textContent = stats.totalSpaces;
+                    const [spacesRes, adoptionsRes, statsRes] = await Promise.all([
+                        fetch('/api/spaces'),
+                        fetch('/api/adoptions'),
+                        fetch('/api/stats')
+                    ]);
+                    
+                    const spaces = await spacesRes.json();
+                    const adoptions = await adoptionsRes.json();
+                    const stats = await statsRes.json();
+                    
                     document.getElementById('adoptedSpaces').textContent = stats.adoptedSpaces;
                     document.getElementById('totalRaised').textContent = '€' + stats.totalRaised.toLocaleString();
-                    document.getElementById('volunteers').textContent = stats.volunteersAvailable;
-                } catch (error) {
-                    console.error('Errore caricamento statistiche:', error);
-                }
-            }
-
-            async function loadSpaces() {
-                try {
-                    const response = await fetch('/api/spaces');
-                    const spaces = await response.json();
-                    const tableBody = document.getElementById('spaces-table');
                     
-                    tableBody.innerHTML = spaces.map(space => \`
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">\${space.name}</div>
-                                <div class="text-sm text-gray-500">\${space.description.substring(0, 60)}...</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                €\${space.cost.toLocaleString()}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full \${space.adopted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
-                                    \${space.adopted ? 'Adottato' : 'Disponibile'}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                \${space.imageUrl ? 
-                                    \`<img src="\${space.imageUrl}" class="h-10 w-10 object-cover rounded" alt="Cantiere">\` : 
-                                    '<span class="text-gray-400">Nessuna</span>'
-                                }
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <button onclick="openImageModal(\${space.id})" class="text-ora-orange hover:text-ora-orange/80">
-                                    \${space.imageUrl ? 'Cambia' : 'Aggiungi'} Immagine
-                                </button>
-                            </td>
-                        </tr>
-                    \`).join('');
-                } catch (error) {
-                    console.error('Errore caricamento spazi:', error);
-                }
-            }
-
-            async function loadAdoptions() {
-                try {
-                    const response = await fetch('/api/adoptions');
-                    const adoptions = await response.json();
-                    const tableBody = document.getElementById('adoptions-table');
+                    document.getElementById('spacesList').innerHTML = spaces.map(space => 
+                        '<div class="border-b py-2">' +
+                        '<strong>' + space.name + '</strong> - €' + space.cost.toLocaleString() + 
+                        (space.adopted ? ' (Adottato da: ' + space.adoptedBy + ')' : ' (Disponibile)') +
+                        '</div>'
+                    ).join('');
                     
-                    tableBody.innerHTML = adoptions.map(adoption => \`
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">\${adoption.spaceName}</div>
-                                <div class="text-sm text-gray-500">€\${adoption.spaceCost.toLocaleString()}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                \${adoption.sponsorName}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <div>\${adoption.sponsorEmail || 'N/A'}</div>
-                                <div>\${adoption.sponsorPhone || 'N/A'}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full \${adoption.wantsToHelp ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}">
-                                    \${adoption.wantsToHelp ? 'Sì' : 'No'}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full status-\${adoption.status}">
-                                    \${adoption.status}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <select onchange="updateAdoptionStatus(\${adoption.id}, this.value)" class="text-sm border rounded px-2 py-1">
-                                    <option value="pending" \${adoption.status === 'pending' ? 'selected' : ''}>Pending</option>
-                                    <option value="confirmed" \${adoption.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
-                                    <option value="completed" \${adoption.status === 'completed' ? 'selected' : ''}>Completed</option>
-                                    <option value="cancelled" \${adoption.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
-                                </select>
-                                \${adoption.paymentProofUrl ? \`<a href="\${adoption.paymentProofUrl}" target="_blank" class="ml-2 text-blue-600 hover:text-blue-900">📄</a>\` : ''}
-                            </td>
-                        </tr>
-                    \`).join('');
-                } catch (error) {
-                    console.error('Errore caricamento adozioni:', error);
-                }
-            }
-
-            function showTab(tab) {
-                // Update tab buttons
-                document.querySelectorAll('.tab-btn').forEach(btn => {
-                    btn.classList.remove('border-ora-orange', 'text-ora-orange');
-                    btn.classList.add('border-transparent', 'text-gray-500');
-                });
-                event.target.classList.remove('border-transparent', 'text-gray-500');
-                event.target.classList.add('border-ora-orange', 'text-ora-orange');
-                
-                // Update tab content
-                document.querySelectorAll('.tab-content').forEach(content => {
-                    content.classList.add('hidden');
-                });
-                document.getElementById(\`\${tab}-tab\`).classList.remove('hidden');
-                
-                currentTab = tab;
-                if (tab === 'adoptions') {
-                    loadAdoptions();
-                }
-            }
-
-            function openImageModal(spaceId) {
-                document.getElementById('spaceId').value = spaceId;
-                document.getElementById('imageModal').classList.remove('hidden');
-                document.getElementById('imageModal').classList.add('flex');
-            }
-
-            function closeImageModal() {
-                document.getElementById('imageModal').classList.add('hidden');
-                document.getElementById('imageModal').classList.remove('flex');
-                document.getElementById('imageForm').reset();
-            }
-
-            async function updateAdoptionStatus(adoptionId, status) {
-                try {
-                    const response = await fetch(\`/api/adoptions/\${adoptionId}/status\`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ status })
-                    });
+                    document.getElementById('adoptionsList').innerHTML = adoptions.map(adoption =>
+                        '<div class="border-b py-2">' +
+                        '<strong>' + adoption.spaceName + '</strong> - ' + adoption.sponsorName +
+                        (adoption.sponsorEmail ? ' (' + adoption.sponsorEmail + ')' : '') +
+                        ' - Status: ' + adoption.status +
+                        (adoption.wantsToHelp ? ' - 🤝 Volontario disponibile' : '') +
+                        '</div>'
+                    ).join('');
                     
-                    if (response.ok) {
-                        alert('Status aggiornato!');
-                        loadAdoptions();
-                        loadStats();
-                    }
                 } catch (error) {
-                    console.error('Errore aggiornamento status:', error);
-                    alert('Errore aggiornamento status');
+                    console.error('Errore caricamento dati:', error);
                 }
             }
-
-            document.getElementById('imageForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData();
-                const spaceId = document.getElementById('spaceId').value;
-                const imageFile = document.getElementById('imageFile').files[0];
-                
-                if (!imageFile) {
-                    alert('Seleziona un file');
-                    return;
-                }
-                
-                formData.append('image', imageFile);
-                
-                try {
-                    const response = await fetch(\`/api/spaces/\${spaceId}/image\`, {
-                        method: 'PUT',
-                        body: formData
-                    });
-                    
-                    if (response.ok) {
-                        alert('Immagine caricata!');
-                        closeImageModal();
-                        loadSpaces();
-                    }
-                } catch (error) {
-                    console.error('Errore upload immagine:', error);
-                    alert('Errore caricamento immagine');
-                }
-            });
-
-            // Load initial data
-            document.addEventListener('DOMContentLoaded', () => {
-                loadStats();
-                loadSpaces();
-            });
+            
+            loadData();
+            setInterval(loadData, 30000); // Ricarica ogni 30 secondi
         </script>
-        
-        <style>
-            .status-pending { @apply bg-yellow-100 text-yellow-800; }
-            .status-confirmed { @apply bg-blue-100 text-blue-800; }
-            .status-completed { @apply bg-green-100 text-green-800; }
-            .status-cancelled { @apply bg-red-100 text-red-800; }
-        </style>
     </body>
     </html>
   `);
@@ -692,8 +370,8 @@ app.use((error, req, res, next) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(\`🚀 Server in esecuzione su http://localhost:\${PORT}\`);
-  console.log(\`📊 Dashboard admin: http://localhost:\${PORT}/admin\`);
+  console.log(`🚀 Server in esecuzione su http://localhost:${PORT}`);
+  console.log(`📊 Dashboard admin: http://localhost:${PORT}/admin`);
 });
 
 // Graceful shutdown
