@@ -353,15 +353,77 @@ app.get('/api/adoptions', (req, res) => {
   });
 });
 
-// GET - Statistiche campagna
-app.get('/api/stats', (req, res) => {
+// PUT - Aggiorna stato adozione
+app.put('/api/adoptions/:id/status', (req, res) => {
+  const adoptionId = req.params.id;
+  const { status } = req.body;
+  
+  const validStatuses = ['pending', 'approved', 'confirmed', 'completed', 'cancelled', 'rejected'];
+  
+  if (!validStatuses.includes(status)) {
+    res.status(400).json({ error: 'Stato non valido' });
+    return;
+  }
+  
+  db.run(
+    'UPDATE adoptions SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    [status, adoptionId],
+    function(err) {
+      if (err) {
+        console.error('Errore aggiornamento stato:', err.message);
+        res.status(500).json({ error: 'Errore aggiornamento stato' });
+        return;
+      }
+      
+      if (this.changes === 0) {
+        res.status(404).json({ error: 'Adozione non trovata' });
+        return;
+      }
+      
+      res.json({ message: 'Stato aggiornato con successo' });
+    }
+  );
+});
+
+// PUT - Aggiorna note adozione
+app.put('/api/adoptions/:id/notes', (req, res) => {
+  const adoptionId = req.params.id;
+  const { notes } = req.body;
+  
+  db.run(
+    'UPDATE adoptions SET notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    [notes, adoptionId],
+    function(err) {
+      if (err) {
+        console.error('Errore aggiornamento note:', err.message);
+        res.status(500).json({ error: 'Errore aggiornamento note' });
+        return;
+      }
+      
+      if (this.changes === 0) {
+        res.status(404).json({ error: 'Adozione non trovata' });
+        return;
+      }
+      
+      res.json({ message: 'Note aggiornate con successo' });
+    }
+  );
+});
+
+// GET - Statistiche dettagliate
+app.get('/api/stats/detailed', (req, res) => {
   const queries = {
     totalSpaces: 'SELECT COUNT(*) as count FROM spaces',
     adoptedSpaces: 'SELECT COUNT(*) as count FROM spaces WHERE adopted = 1',
     totalRaised: 'SELECT COALESCE(SUM(s.cost), 0) as total FROM spaces s WHERE s.adopted = 1',
     totalGoal: 'SELECT SUM(cost) as total FROM spaces',
     volunteersAvailable: 'SELECT COUNT(*) as count FROM adoptions WHERE wants_to_help = 1',
-    pendingAdoptions: 'SELECT COUNT(*) as count FROM adoptions WHERE status = "pending"'
+    pendingAdoptions: 'SELECT COUNT(*) as count FROM adoptions WHERE status = "pending"',
+    approvedAdoptions: 'SELECT COUNT(*) as count FROM adoptions WHERE status = "approved"',
+    confirmedAdoptions: 'SELECT COUNT(*) as count FROM adoptions WHERE status = "confirmed"',
+    completedAdoptions: 'SELECT COUNT(*) as count FROM adoptions WHERE status = "completed"',
+    cancelledAdoptions: 'SELECT COUNT(*) as count FROM adoptions WHERE status = "cancelled"',
+    rejectedAdoptions: 'SELECT COUNT(*) as count FROM adoptions WHERE status = "rejected"'
   };
   
   const stats = {};
@@ -386,8 +448,8 @@ app.get('/api/stats', (req, res) => {
       res.json(stats);
     })
     .catch(err => {
-      console.error('Errore recupero statistiche:', err.message);
-      res.status(500).json({ error: 'Errore recupero statistiche' });
+      console.error('Errore recupero statistiche dettagliate:', err.message);
+      res.status(500).json({ error: 'Errore recupero statistiche dettagliate' });
     });
 });
 
