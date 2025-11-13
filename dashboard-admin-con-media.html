@@ -193,9 +193,12 @@
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button class="text-indigo-600 hover:text-indigo-900">
-                                            🖼️ Gestisci
+                                        <button @click="openSpaceModal(space)" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                                            🖼️ Cambia Foto
                                         </button>
+                                        <span x-show="space.adopted" class="text-green-600 text-sm">
+                                            👤 Adottato
+                                        </span>
                                     </td>
                                 </tr>
                             </template>
@@ -250,7 +253,7 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="formatDate(adoption.created_at)"></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button class="text-indigo-600 hover:text-indigo-900">
+                                        <button @click="openAdoptionModal(adoption)" class="text-indigo-600 hover:text-indigo-900">
                                             ⚙️ Gestisci
                                         </button>
                                     </td>
@@ -365,6 +368,103 @@
         </div>
     </div>
 
+    <!-- Space Image Upload Modal -->
+    <div x-show="showSpaceModal" x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50"
+         @click="showSpaceModal = false">
+        <div @click.stop class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-medium text-gray-900 text-center mb-4" x-text="`Gestisci spazio: ${selectedSpace?.name}`"></h3>
+                
+                <!-- Current Image -->
+                <div x-show="selectedSpace?.image_url" class="mb-4 text-center">
+                    <p class="text-sm text-gray-600 mb-2">Immagine attuale:</p>
+                    <img :src="selectedSpace?.image_url" :alt="selectedSpace?.name" class="mx-auto h-32 w-auto rounded-lg">
+                </div>
+                
+                <!-- Upload Form -->
+                <form @submit.prevent="uploadSpaceImage">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nuova Immagine</label>
+                        <input type="file" accept="image/*" @change="handleImageUpload" 
+                               class="w-full p-2 border border-gray-300 rounded-md" required>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button type="button" @click="closeSpaceModal" 
+                                class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors">
+                            Annulla
+                        </button>
+                        <button type="submit" :disabled="uploading"
+                                class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 transition-colors">
+                            <span x-show="!uploading">Carica</span>
+                            <span x-show="uploading">Caricamento...</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Adoption Management Modal -->
+    <div x-show="showAdoptionModal" x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50"
+         @click="showAdoptionModal = false">
+        <div @click.stop class="relative top-20 mx-auto p-5 border w-[600px] shadow-lg rounded-md bg-white max-h-[80vh] overflow-y-auto">
+            <div class="mt-3">
+                <h3 class="text-lg font-medium text-gray-900 mb-4" x-text="`Gestione Adozione: ${selectedAdoption?.sponsor_name}`"></h3>
+                
+                <!-- Adoption Details -->
+                <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Sponsor</label>
+                            <p class="text-sm text-gray-900" x-text="selectedAdoption?.sponsor_name"></p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Email</label>
+                            <p class="text-sm text-gray-900" x-text="selectedAdoption?.sponsor_email"></p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Spazio</label>
+                            <p class="text-sm text-gray-900" x-text="selectedAdoption?.space_name"></p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Importo</label>
+                            <p class="text-sm text-gray-900">€<span x-text="selectedAdoption?.space_cost ? selectedAdoption.space_cost.toLocaleString() : '0'"></span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Status Management -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Stato Adozione</label>
+                    <select x-model="selectedAdoption.status" 
+                            class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="pending">🟡 In Attesa</option>
+                        <option value="approved">🔵 Approvata</option>
+                        <option value="confirmed">🟣 Confermata</option>
+                        <option value="completed">🟢 Completata</option>
+                        <option value="cancelled">⚫ Annullata</option>
+                        <option value="rejected">🔴 Rifiutata</option>
+                    </select>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex gap-3">
+                    <button @click="closeAdoptionModal" 
+                            class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors">
+                        Annulla
+                    </button>
+                    <button @click="updateAdoptionStatus" 
+                            class="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
+                        Salva Modifiche
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         function adminPanel() {
             return {
@@ -378,6 +478,13 @@
                 carouselFile: null,
                 carouselCaption: '',
                 carouselDescription: '',
+                
+                // Modal states
+                showSpaceModal: false,
+                showAdoptionModal: false,
+                selectedSpace: null,
+                selectedAdoption: null,
+                selectedImage: null,
 
                 async init() {
                     await this.refreshData();
@@ -517,6 +624,89 @@
                         hour: '2-digit',
                         minute: '2-digit'
                     });
+                },
+
+                // Modal management
+                openSpaceModal(space) {
+                    this.selectedSpace = space;
+                    this.showSpaceModal = true;
+                },
+
+                openAdoptionModal(adoption) {
+                    this.selectedAdoption = adoption;
+                    this.showAdoptionModal = true;
+                },
+
+                closeSpaceModal() {
+                    this.showSpaceModal = false;
+                    this.selectedSpace = null;
+                    this.selectedImage = null;
+                },
+
+                closeAdoptionModal() {
+                    this.showAdoptionModal = false;
+                    this.selectedAdoption = null;
+                },
+
+                handleImageUpload(event) {
+                    this.selectedImage = event.target.files[0];
+                },
+
+                async uploadSpaceImage() {
+                    if (!this.selectedImage || !this.selectedSpace) return;
+
+                    this.uploading = true;
+                    try {
+                        const formData = new FormData();
+                        formData.append('image', this.selectedImage);
+
+                        const response = await fetch(`/api/spaces/${this.selectedSpace.id}/image`, {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (response.ok) {
+                            await this.refreshData();
+                            this.closeSpaceModal();
+                            alert('Immagine aggiornata con successo!');
+                        } else {
+                            const error = await response.json();
+                            alert('Errore: ' + error.error);
+                        }
+                    } catch (error) {
+                        console.error('Error uploading image:', error);
+                        alert('Errore nel caricamento dell\'immagine');
+                    } finally {
+                        this.uploading = false;
+                    }
+                },
+
+                async updateAdoptionStatus() {
+                    if (!this.selectedAdoption) return;
+
+                    try {
+                        const response = await fetch(`/api/adoptions/${this.selectedAdoption.id}/status`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                status: this.selectedAdoption.status
+                            })
+                        });
+
+                        if (response.ok) {
+                            await this.refreshData();
+                            this.closeAdoptionModal();
+                            alert('Stato aggiornato con successo!');
+                        } else {
+                            const error = await response.json();
+                            alert('Errore: ' + error.error);
+                        }
+                    } catch (error) {
+                        console.error('Error updating adoption:', error);
+                        alert('Errore nell\'aggiornamento');
+                    }
                 }
             }
         }
