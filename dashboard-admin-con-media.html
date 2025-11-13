@@ -185,7 +185,7 @@
                 </div>
 
                 <div x-show="spaces.length > 0" class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table id="spaces-table" class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spazio</th>
@@ -195,37 +195,7 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            <template x-for="space in spaces" :key="space.id">
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div>
-                                            <div class="text-sm font-medium text-gray-900" x-text="space.name"></div>
-                                            <div class="text-sm text-gray-500" x-text="space.description"></div>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        €<span x-text="space.cost.toLocaleString()"></span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span x-show="space.adopted" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                            ✅ Adottato
-                                        </span>
-                                        <span x-show="!space.adopted" class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                            🔴 Disponibile
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button @click="console.log('🖱️ CLICK rilevato!'); openSpaceModal(space)" 
-                                                onclick="console.log('📍 onclick rilevato!'); alert('Click funziona!');"
-                                                class="text-indigo-600 hover:text-indigo-900 mr-3">
-                                            🖼️ Cambia Foto
-                                        </button>
-                                        <span x-show="space.adopted" class="text-green-600 text-sm">
-                                            👤 Adottato
-                                        </span>
-                                    </td>
-                                </tr>
-                            </template>
+                            <!-- Contenuto popolato da JavaScript -->
                         </tbody>
                     </table>
                 </div>
@@ -744,6 +714,182 @@
                 }
             }
         }
+    </script>
+
+    <script>
+        // VANILLA JAVASCRIPT MODAL SYSTEM (backup per quando Alpine.js non funziona)
+        
+        let currentSpaceModal = null;
+
+        function openSpaceModalVanilla(button) {
+            console.log('🖼️ Apertura modal vanilla');
+            
+            // Prende i dati dal bottone
+            const spaceId = button.getAttribute('data-space-id');
+            const spaceName = button.getAttribute('data-space-name');
+            
+            console.log('Spazio selezionato:', { spaceId, spaceName });
+            
+            // Crea il modal HTML
+            const modalHTML = `
+                <div id="vanilla-space-modal" class="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50" onclick="closeSpaceModalVanilla()">
+                    <div onclick="event.stopPropagation()" class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                        <div class="mt-3">
+                            <h3 class="text-lg font-medium text-gray-900 text-center mb-4">
+                                Gestisci spazio: ${spaceName}
+                            </h3>
+                            
+                            <form onsubmit="uploadSpaceImageVanilla(event, '${spaceId}')">
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Nuova Immagine</label>
+                                    <input type="file" accept="image/*" id="vanilla-image-input" 
+                                           class="w-full p-2 border border-gray-300 rounded-md" required>
+                                </div>
+                                
+                                <div class="flex gap-3">
+                                    <button type="button" onclick="closeSpaceModalVanilla()" 
+                                            class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors">
+                                        Annulla
+                                    </button>
+                                    <button type="submit" id="vanilla-upload-btn"
+                                            class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                                        Carica
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Aggiunge il modal al body
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            currentSpaceModal = document.getElementById('vanilla-space-modal');
+            
+            console.log('✅ Modal vanilla creato e mostrato');
+        }
+
+        function closeSpaceModalVanilla() {
+            if (currentSpaceModal) {
+                currentSpaceModal.remove();
+                currentSpaceModal = null;
+                console.log('🚪 Modal vanilla chiuso');
+            }
+        }
+
+        async function uploadSpaceImageVanilla(event, spaceId) {
+            event.preventDefault();
+            console.log('📤 Upload immagine per spazio:', spaceId);
+            
+            const fileInput = document.getElementById('vanilla-image-input');
+            const uploadBtn = document.getElementById('vanilla-upload-btn');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Seleziona un file');
+                return;
+            }
+            
+            uploadBtn.textContent = 'Caricamento...';
+            uploadBtn.disabled = true;
+            
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+                
+                const response = await fetch(`/api/spaces/${spaceId}/image`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    alert('Immagine aggiornata con successo!');
+                    closeSpaceModalVanilla();
+                    // Ricarica la pagina per vedere i cambiamenti
+                    window.location.reload();
+                } else {
+                    const error = await response.json();
+                    alert('Errore: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Errore upload:', error);
+                alert('Errore nel caricamento dell\'immagine');
+            } finally {
+                uploadBtn.textContent = 'Carica';
+                uploadBtn.disabled = false;
+            }
+        }
+
+        console.log('✅ Sistema modal vanilla caricato');
+        
+        // Popola la tabella spazi con vanilla JavaScript
+        async function loadSpacesVanilla() {
+            try {
+                const response = await fetch('/api/spaces');
+                if (!response.ok) throw new Error('API Error');
+                
+                const spaces = await response.json();
+                console.log('📦 Spazi caricati:', spaces);
+                
+                const tbody = document.querySelector('#spaces-table tbody');
+                if (!tbody) {
+                    console.log('❌ Tabella spazi non trovata');
+                    return;
+                }
+                
+                if (spaces.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="px-6 py-12 text-center">
+                                <div class="text-6xl mb-4">🏠</div>
+                                <h3 class="text-lg font-medium text-gray-900 mb-2">Nessuno spazio trovato</h3>
+                                <p class="text-gray-500">Gli spazi della campagna appariranno qui</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                tbody.innerHTML = spaces.map(space => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">${space.name}</div>
+                                <div class="text-sm text-gray-500">${space.description}</div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            €${space.cost.toLocaleString()}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            ${space.adopted 
+                                ? '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">✅ Adottato</span>'
+                                : '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">🔴 Disponibile</span>'
+                            }
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button onclick="openSpaceModalVanilla(this)" 
+                                    data-space-id="${space.id}"
+                                    data-space-name="${space.name}"
+                                    class="text-indigo-600 hover:text-indigo-900 mr-3">
+                                🖼️ Cambia Foto
+                            </button>
+                            ${space.adopted ? '<span class="text-green-600 text-sm">👤 Adottato</span>' : ''}
+                        </td>
+                    </tr>
+                `).join('');
+                
+                console.log('✅ Tabella spazi popolata con', spaces.length, 'spazi');
+                
+            } catch (error) {
+                console.error('❌ Errore caricamento spazi:', error);
+            }
+        }
+        
+        // Carica gli spazi quando la pagina è pronta
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(loadSpacesVanilla, 500);
+        });
     </script>
 </body>
 </html>
