@@ -254,6 +254,8 @@
             return {
                 activeTab: 'overview',
                 stats: {},
+                spaces: [],
+                adoptions: [],
                 media: { logo: null, carousel: [] },
                 uploading: false,
                 logoFile: null,
@@ -268,13 +270,18 @@
 
                 async refreshData() {
                     try {
-                        const response = await fetch('/api/stats/detailed');
-                        if (response.ok) {
-                            this.stats = await response.json();
-                        }
+                        const [spacesRes, adoptionsRes, statsRes] = await Promise.all([
+                            fetch('/api/spaces'),
+                            fetch('/api/adoptions'),
+                            fetch('/api/stats/detailed')
+                        ]);
+
+                        if (spacesRes.ok) this.spaces = await spacesRes.json();
+                        if (adoptionsRes.ok) this.adoptions = await adoptionsRes.json();
+                        if (statsRes.ok) this.stats = await statsRes.json();
                     } catch (error) {
-                        console.error('Error loading stats:', error);
-                        alert('Errore nel caricamento delle statistiche');
+                        console.error('Error loading data:', error);
+                        alert('Errore nel caricamento dei dati');
                     }
                 },
 
@@ -372,6 +379,28 @@
                         console.error('Error deleting image:', error);
                         alert('Errore nell\'eliminazione dell\'immagine');
                     }
+                },
+
+                getStatusText(status) {
+                    const statusMap = {
+                        'pending': '🟡 In Attesa',
+                        'approved': '🔵 Approvata',
+                        'confirmed': '🟣 Confermata',
+                        'completed': '🟢 Completata',
+                        'cancelled': '⚫ Annullata',
+                        'rejected': '🔴 Rifiutata'
+                    };
+                    return statusMap[status] || status;
+                },
+
+                formatDate(dateString) {
+                    return new Date(dateString).toLocaleDateString('it-IT', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
                 }
             }
         }
