@@ -609,7 +609,7 @@
                     if (media.logo) {
                         const customLogo = document.getElementById('custom-logo');
                         const defaultLogo = document.getElementById('default-logo');
-                        customLogo.src = `${API_BASE}${media.logo}`;
+                        customLogo.src = media.logo; // Usa direttamente il path dal backend
                         customLogo.classList.remove('hidden');
                         defaultLogo.classList.add('hidden');
                     }
@@ -639,7 +639,7 @@
             // Genera slide
             slidesContainer.innerHTML = carouselImages.map((image, index) => `
                 <div class="min-w-full h-full relative">
-                    <img src="${API_BASE}${image.url}" alt="${image.caption || 'Immagine carosello'}" 
+                    <img src="${image.url}" alt="${image.caption || 'Immagine carosello'}" 
                          class="w-full h-full object-cover">
                     <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
                         <h3 class="text-white font-bold text-xl">${image.caption || ''}</h3>

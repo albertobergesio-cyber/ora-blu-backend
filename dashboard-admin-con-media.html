@@ -163,7 +163,7 @@
                     <div class="mb-6">
                         <h4 class="text-lg font-semibold text-gray-700 mb-3">Logo Attuale</h4>
                         <div x-show="media.logo" class="bg-gray-50 rounded-lg p-4 border-2 border-dashed border-gray-300">
-                            <img :src="'/api' + media.logo" alt="Logo attuale" class="max-h-32 mx-auto">
+                            <img :src="media.logo" alt="Logo attuale" class="max-h-32 mx-auto">
                         </div>
                         <div x-show="!media.logo" class="bg-gray-50 rounded-lg p-8 border-2 border-dashed border-gray-300 text-center">
                             <svg class="w-12 h-12 mx-auto text-gray-400 mb-2" fill="currentColor" viewBox="0 0 20 20">
@@ -229,7 +229,7 @@
                         <div class="space-y-3">
                             <template x-for="image in media.carousel || []" :key="image.id">
                                 <div class="flex items-center gap-4 p-3 border border-gray-200 rounded-lg">
-                                    <img :src="'/api' + image.url" :alt="image.caption" class="w-16 h-16 object-cover rounded-md">
+                                    <img :src="image.url" :alt="image.caption" class="w-16 h-16 object-cover rounded-md">
                                     <div class="flex-1">
                                         <p class="font-medium text-gray-900" x-text="image.caption || 'Senza titolo'"></p>
                                         <p class="text-sm text-gray-500" x-text="image.description || 'Senza descrizione'"></p>
