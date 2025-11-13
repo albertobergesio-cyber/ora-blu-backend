@@ -17,9 +17,124 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files (immagini)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Database connection
-const dbPath = path.join(__dirname, 'database', 'ora_blu.db');
-const db = new sqlite3.Database(dbPath);
+// Database connection con setup automatico
+const isDevelopment = process.env.NODE_ENV !== 'production';
+const dbPath = isDevelopment 
+  ? path.join(__dirname, 'database', 'ora_blu.db')
+  : path.join(__dirname, 'ora_blu.db'); // Railway: nella root
+
+// Crea la directory database solo in sviluppo
+if (isDevelopment) {
+  const dbDir = path.join(__dirname, 'database');
+  fs.ensureDirSync(dbDir);
+}
+
+console.log('📁 Database path:', dbPath);
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error('❌ Errore connessione database:', err.message);
+  } else {
+    console.log('✅ Database connesso:', dbPath);
+    // Setup automatico tabelle all'avvio
+    setupDatabase();
+  }
+});
+
+// Funzione per setup automatico delle tabelle
+function setupDatabase() {
+  console.log('🔧 Setup automatico database...');
+  
+  db.serialize(() => {
+    // Tabella spazi
+    db.run(`CREATE TABLE IF NOT EXISTS spaces (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL,
+      cost INTEGER NOT NULL,
+      adopted BOOLEAN DEFAULT 0,
+      adopted_by TEXT,
+      image_url TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`, (err) => {
+      if (err) {
+        console.error('❌ Errore tabella spaces:', err.message);
+      } else {
+        console.log('✅ Tabella spaces OK');
+      }
+    });
+
+    // Tabella adozioni  
+    db.run(`CREATE TABLE IF NOT EXISTS adoptions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      space_id INTEGER NOT NULL,
+      sponsor_name TEXT NOT NULL,
+      sponsor_email TEXT,
+      sponsor_phone TEXT,
+      wants_to_help BOOLEAN DEFAULT 0,
+      payment_proof_url TEXT,
+      status TEXT DEFAULT 'pending',
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (space_id) REFERENCES spaces (id)
+    )`, (err) => {
+      if (err) {
+        console.error('❌ Errore tabella adoptions:', err.message);
+      } else {
+        console.log('✅ Tabella adoptions OK');
+        // Popola dati iniziali se necessario
+        populateInitialData();
+      }
+    });
+  });
+}
+
+// Popola dati iniziali
+function populateInitialData() {
+  db.get('SELECT COUNT(*) as count FROM spaces', (err, row) => {
+    if (err) {
+      console.error('❌ Errore controllo dati:', err.message);
+      return;
+    }
+    
+    if (row.count === 0) {
+      console.log('🔄 Popolamento dati iniziali...');
+      const spaces = [
+        { name: 'Bagno 1', description: 'Contribuirai ad arredare il bagno con lavandino, tazza, bidet e piatto doccia', cost: 3000 },
+        { name: 'Vacanza', description: 'Manderemo i bambini in gita per qualche giorno durante il trasloco', cost: 5000 },
+        { name: 'Cameretta 1', description: 'Ikea ci ha regalato i lettini, arrederemo con scrivanie, sedie, mobili', cost: 3000 },
+        { name: 'Cameretta 2', description: 'Ikea ci ha regalato i lettini, arrederemo con scrivanie, sedie, mobili', cost: 3000 },
+        { name: 'Cameretta 3', description: 'Ikea ci ha regalato i lettini, arrederemo con scrivanie, sedie, mobili', cost: 3000 },
+        { name: 'Cameretta 4', description: 'Ikea ci ha regalato i lettini, arrederemo con scrivanie, sedie, mobili', cost: 3000 },
+        { name: 'Cameretta 5', description: 'Ikea ci ha regalato i lettini, arrederemo con scrivanie, sedie, mobili', cost: 3000 },
+        { name: 'Cucina - Frigo e Forno', description: 'Elettrodomestici essenziali per preparare pasti nutrienti', cost: 3000 },
+        { name: 'Lavanderia - Lavatrici', description: 'Lavatrici professionali per vestiti sempre puliti', cost: 2000 },
+        { name: 'Lavanderia - Asciugatrici', description: 'Asciugatrici efficienti per il ciclo di cura', cost: 3000 },
+        { name: 'Cucina - Fuochi e Cappa', description: 'Piano cottura, cappa aspirante e robot da cucina', cost: 3000 },
+        { name: 'Cucina - Mobili', description: 'Mobili e pensili per organizzare tutto il necessario', cost: 3000 },
+        { name: 'Cucina - Tavolo', description: 'Grande tavolo con sedie per i pasti insieme', cost: 3000 },
+        { name: 'Soggiorno e TV', description: 'Area relax con televisione per momenti di svago', cost: 3000 },
+        { name: 'Divano e Tappeto', description: 'Divano comodo e tappeto per giocare e rilassarsi', cost: 3000 },
+        { name: 'Giardino', description: 'Attrezzature e arredi per lo spazio all\'aperto', cost: 3000 },
+        { name: 'Bagno 2', description: 'Secondo bagno completo per comfort e privacy', cost: 3000 },
+        { name: 'Bagno 3', description: 'Terzo bagno per completare i servizi', cost: 3000 },
+        { name: 'Sala Visite', description: 'Spazio per incontri con le famiglie d\'origine', cost: 3000 },
+        { name: 'Armadi e Libreria', description: 'Armadi per vestiti e librerie per libri e giochi', cost: 3000 }
+      ];
+      
+      const insertStmt = db.prepare('INSERT INTO spaces (name, description, cost) VALUES (?, ?, ?)');
+      spaces.forEach(space => {
+        insertStmt.run([space.name, space.description, space.cost]);
+      });
+      insertStmt.finalize(() => {
+        console.log(`🎉 Inseriti ${spaces.length} spazi iniziali!`);
+      });
+    } else {
+      console.log(`ℹ️ Database già popolato con ${row.count} spazi.`);
+    }
+  });
+}
 
 // Configurazione Multer per upload file
 const storage = multer.diskStorage({

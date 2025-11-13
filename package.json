@@ -1,14 +1,18 @@
 {
   "name": "ora-blu-backend",
   "version": "1.0.0",
-  "description": "Backend per gestione campagna crowdfunding L'Ora Blu",
+  "description": "Backend per gestione campagna crowdfunding L'Ora Blu - Railway optimized",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "setup": "node setup-db.js"
+    "railway-build": "echo 'Build completed'",
+    "railway-start": "node server.js"
   },
-  "keywords": ["crowdfunding", "ora-blu", "backend"],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["crowdfunding", "ora-blu", "backend", "railway"],
   "author": "L'Ora Blu Support Team",
   "license": "MIT",
   "dependencies": {
@@ -20,8 +24,5 @@
     "path": "^0.12.7",
     "fs-extra": "^11.1.1",
     "uuid": "^9.0.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
   }
 }

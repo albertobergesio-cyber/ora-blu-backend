@@ -2,21 +2,30 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs-extra');
 
-// Crea la directory del database se non esiste
-const dbDir = path.join(__dirname, 'database');
-fs.ensureDirSync(dbDir);
+// Railway usa il filesystem temporaneo, quindi creiamo il DB in memoria o nella root
+const isDevelopment = process.env.NODE_ENV !== 'production';
+const dbPath = isDevelopment 
+  ? path.join(__dirname, 'database', 'ora_blu.db')
+  : path.join(__dirname, 'ora_blu.db'); // Railway: nella root
 
-// Crea la directory per le immagini se non esiste
+// Crea la directory del database solo in sviluppo
+if (isDevelopment) {
+  const dbDir = path.join(__dirname, 'database');
+  fs.ensureDirSync(dbDir);
+}
+
+// Crea la directory per le immagini
 const uploadsDir = path.join(__dirname, 'uploads');
 fs.ensureDirSync(uploadsDir);
 
-const dbPath = path.join(dbDir, 'ora_blu.db');
+console.log('📁 Database path:', dbPath);
+console.log('📁 Uploads path:', uploadsDir);
 
 // Crea il database
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
-    console.error('Errore apertura database:', err.message);
-    return;
+    console.error('❌ Errore apertura database:', err.message);
+    process.exit(1);
   }
   console.log('✅ Connesso al database SQLite.');
 });
@@ -37,7 +46,7 @@ db.serialize(() => {
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`, (err) => {
     if (err) {
-      console.error('Errore creazione tabella spaces:', err.message);
+      console.error('❌ Errore creazione tabella spaces:', err.message);
     } else {
       console.log('✅ Tabella spaces creata.');
     }
@@ -59,7 +68,7 @@ db.serialize(() => {
     FOREIGN KEY (space_id) REFERENCES spaces (id)
   )`, (err) => {
     if (err) {
-      console.error('Errore creazione tabella adoptions:', err.message);
+      console.error('❌ Errore creazione tabella adoptions:', err.message);
     } else {
       console.log('✅ Tabella adoptions creata.');
     }
@@ -172,7 +181,7 @@ db.serialize(() => {
   // Controlla se ci sono già dati
   db.get('SELECT COUNT(*) as count FROM spaces', (err, row) => {
     if (err) {
-      console.error('Errore controllo dati:', err.message);
+      console.error('❌ Errore controllo dati:', err.message);
       return;
     }
     
@@ -183,14 +192,21 @@ db.serialize(() => {
         VALUES (?, ?, ?)
       `);
       
-      spaces.forEach(space => {
-        insertStmt.run([space.name, space.description, space.cost]);
+      spaces.forEach((space, index) => {
+        insertStmt.run([space.name, space.description, space.cost], (err) => {
+          if (err) {
+            console.error(`❌ Errore inserimento spazio ${index + 1}:`, err.message);
+          } else {
+            console.log(`✅ Spazio ${index + 1}/20 inserito: ${space.name}`);
+          }
+        });
       });
       
-      insertStmt.finalize();
-      console.log('✅ Dati iniziali inseriti.');
+      insertStmt.finalize(() => {
+        console.log('🎉 Tutti i dati iniziali inseriti!');
+      });
     } else {
-      console.log('ℹ️ Dati già presenti nel database.');
+      console.log(`ℹ️ Database già popolato con ${row.count} spazi.`);
     }
   });
 });
@@ -198,8 +214,9 @@ db.serialize(() => {
 // Chiudi il database
 db.close((err) => {
   if (err) {
-    console.error('Errore chiusura database:', err.message);
+    console.error('❌ Errore chiusura database:', err.message);
   } else {
     console.log('✅ Setup database completato!');
+    console.log('🚀 Pronto per avviare il server!');
   }
 });
