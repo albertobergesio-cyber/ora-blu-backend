@@ -283,46 +283,6 @@ app.post('/api/spaces/:id/adopt', upload.single('paymentProof'), (req, res) => {
   });
 });
 
-// POST - Upload immagine per spazio (compatibilità modal)
-app.post('/api/spaces/:id/image', upload.single('image'), (req, res) => {
-  const spaceId = req.params.id;
-  console.log(`📤 POST /api/spaces/${spaceId}/image richiesto`);
-  
-  if (!req.file) {
-    console.error('❌ Nessun file ricevuto');
-    res.status(400).json({ error: 'Nessun file caricato' });
-    return;
-  }
-  
-  const imageUrl = `/uploads/${req.file.filename}`;
-  console.log(`🖼️ Salvando immagine: ${imageUrl}`);
-  
-  db.run(
-    'UPDATE spaces SET image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-    [imageUrl, spaceId],
-    function(err) {
-      if (err) {
-        console.error('❌ Errore aggiornamento immagine:', err.message);
-        res.status(500).json({ error: 'Errore aggiornamento immagine: ' + err.message });
-        return;
-      }
-      
-      if (this.changes === 0) {
-        console.error(`❌ Spazio ${spaceId} non trovato`);
-        res.status(404).json({ error: 'Spazio non trovato' });
-        return;
-      }
-      
-      console.log(`✅ Immagine aggiornata per spazio ${spaceId}: ${imageUrl}`);
-      res.json({ 
-        success: true, 
-        image_url: imageUrl, 
-        message: 'Immagine aggiornata con successo!' 
-      });
-    }
-  );
-});
-
 // PUT - Aggiorna immagine di uno spazio (admin)
 app.put('/api/spaces/:id/image', upload.single('image'), (req, res) => {
   const spaceId = req.params.id;
