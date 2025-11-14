@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - L'Ora Blu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .tab-active { 
+            background-color: #2563eb; 
+            color: white; 
+        }
+        .tab-inactive { 
+            background-color: #e5e7eb; 
+            color: #374151; 
+        }
+        .tab-inactive:hover { 
+            background-color: #d1d5db; 
+        }
+        .hidden { 
+            display: none !important; 
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-orange-500 p-3 rounded-full">
+                        <span class="text-white text-lg font-bold">🏠</span>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Dashboard Admin</h1>
+                        <p class="text-gray-600">L'Ora Blu - Gestione Campagna</p>
+                    </div>
+                </div>
+                <button onclick="refreshAllData()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    🔄 Aggiorna Tutto
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Tab Navigation -->
+    <div class="max-w-7xl mx-auto px-4 py-4">
+        <div class="flex space-x-1 bg-gray-200 rounded-lg p-1">
+            <button onclick="showTab('overview')" id="tab-overview" class="tab-active px-4 py-2 rounded-md transition-colors">
+                📊 Panoramica
+            </button>
+            <button onclick="showTab('spaces')" id="tab-spaces" class="tab-inactive px-4 py-2 rounded-md transition-colors">
+                🏠 Gestione Spazi
+            </button>
+            <button onclick="showTab('media')" id="tab-media" class="tab-inactive px-4 py-2 rounded-md transition-colors">
+                🖼️ Logo e Carosello
+            </button>
+            <button onclick="showTab('adoptions')" id="tab-adoptions" class="tab-inactive px-4 py-2 rounded-md transition-colors">
+                ❤️ Gestione Adozioni
+            </button>
+        </div>
+    </div>
+
+    <!-- Overview Tab -->
+    <div id="content-overview" class="max-w-7xl mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="flex items-center justify-center h-8 w-8 rounded-md bg-blue-500 text-white">🏠</div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Spazi Totali</dt>
+                            <dd id="stat-spaces-total" class="text-lg font-medium text-gray-900">-</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="flex items-center justify-center h-8 w-8 rounded-md bg-green-500 text-white">❤️</div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Spazi Adottati</dt>
+                            <dd id="stat-spaces-adopted" class="text-lg font-medium text-gray-900">-</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="flex items-center justify-center h-8 w-8 rounded-md bg-yellow-500 text-white">💰</div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Raccolto</dt>
+                            <dd id="stat-collected" class="text-lg font-medium text-gray-900">-</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="flex items-center justify-center h-8 w-8 rounded-md bg-purple-500 text-white">📊</div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Progresso</dt>
+                            <dd id="stat-progress" class="text-lg font-medium text-gray-900">-</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="flex items-center justify-center h-8 w-8 rounded-md bg-red-500 text-white">👥</div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Adozioni</dt>
+                            <dd id="stat-adoptions" class="text-lg font-medium text-gray-900">-</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spaces Tab -->
+    <div id="content-spaces" class="max-w-7xl mx-auto px-4 py-6 hidden">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                🏠 Gestione Spazi
+            </h3>
+            
+            <div id="spaces-table-container">
+                <div class="text-center py-12">
+                    <div class="text-4xl mb-4">🔄</div>
+                    <p class="text-gray-500">Caricamento spazi...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Media Tab -->
+    <div id="content-media" class="max-w-7xl mx-auto px-4 py-6 hidden">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-6">🖼️ Gestione Media</h3>
+            
+            <!-- Logo Upload -->
+            <div class="mb-8">
+                <h4 class="text-lg font-semibold mb-4">Logo</h4>
+                <div id="current-logo" class="mb-4 text-center hidden">
+                    <p class="text-sm text-gray-600 mb-2">Logo attuale:</p>
+                    <img id="logo-preview" src="" alt="Logo attuale" class="max-h-32 mx-auto">
+                </div>
+                
+                <form onsubmit="uploadLogo(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Carica nuovo logo</label>
+                        <input type="file" id="logo-file" accept="image/*" class="w-full p-2 border border-gray-300 rounded-md" required>
+                    </div>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                        Carica Logo
+                    </button>
+                </form>
+            </div>
+
+            <!-- Carousel Upload -->
+            <div class="mb-8">
+                <h4 class="text-lg font-semibold mb-4">Carosello</h4>
+                <div id="carousel-images" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <!-- Populated by JavaScript -->
+                </div>
+                
+                <form onsubmit="uploadCarouselImage(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Carica immagine carosello</label>
+                        <input type="file" id="carousel-file" accept="image/*" class="w-full p-2 border border-gray-300 rounded-md" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Titolo</label>
+                        <input type="text" id="carousel-caption" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Titolo dell'immagine">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Descrizione</label>
+                        <textarea id="carousel-description" class="w-full p-2 border border-gray-300 rounded-md" rows="3" placeholder="Descrizione dell'immagine"></textarea>
+                    </div>
+                    <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
+                        Aggiungi al Carosello
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Adoptions Tab -->
+    <div id="content-adoptions" class="max-w-7xl mx-auto px-4 py-6 hidden">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-6">❤️ Gestione Adozioni</h3>
+            
+            <div id="adoptions-table-container">
+                <div class="text-center py-12">
+                    <div class="text-4xl mb-4">🔄</div>
+                    <p class="text-gray-500">Caricamento adozioni...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab management
+        function showTab(tabName) {
+            // Hide all content
+            const contents = ['overview', 'spaces', 'media', 'adoptions'];
+            contents.forEach(tab => {
+                document.getElementById(`content-${tab}`).classList.add('hidden');
+                document.getElementById(`tab-${tab}`).className = 'tab-inactive px-4 py-2 rounded-md transition-colors';
+            });
+            
+            // Show selected content
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabName}`).className = 'tab-active px-4 py-2 rounded-md transition-colors';
+            
+            // Load data for specific tabs
+            if (tabName === 'spaces') {
+                loadSpaces();
+            } else if (tabName === 'media') {
+                loadMedia();
+            } else if (tabName === 'adoptions') {
+                loadAdoptions();
+            }
+        }
+
+        // Load functions
+        async function refreshAllData() {
+            await loadStats();
+        }
+
+        async function loadStats() {
+            try {
+                const [spacesRes, statsRes] = await Promise.all([
+                    fetch('/api/spaces'),
+                    fetch('/api/stats')
+                ]);
+
+                if (spacesRes.ok) {
+                    const spaces = await spacesRes.json();
+                    const adoptedSpaces = spaces.filter(s => s.adopted).length;
+                    const totalCost = spaces.reduce((sum, s) => sum + s.cost, 0);
+                    const collectedAmount = adoptedSpaces * 3000; // Simplified calculation
+                    
+                    document.getElementById('stat-spaces-total').textContent = spaces.length;
+                    document.getElementById('stat-spaces-adopted').textContent = adoptedSpaces;
+                    document.getElementById('stat-collected').textContent = `€${collectedAmount.toLocaleString()}`;
+                    document.getElementById('stat-progress').textContent = `${Math.round((collectedAmount/totalCost)*100)}%`;
+                }
+
+                if (statsRes.ok) {
+                    const stats = await statsRes.json();
+                    document.getElementById('stat-adoptions').textContent = stats.adoptions || 0;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadSpaces() {
+            const container = document.getElementById('spaces-table-container');
+            
+            try {
+                const response = await fetch('/api/spaces');
+                if (!response.ok) throw new Error('API Error');
+                
+                const spaces = await response.json();
+                
+                if (spaces.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-12">
+                            <div class="text-6xl mb-4">🏠</div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Nessuno spazio trovato</h3>
+                            <p class="text-gray-500">Gli spazi della campagna appariranno qui</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = `
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spazio</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Costo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stato</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${spaces.map(space => `
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-900">${space.name}</div>
+                                            <div class="text-sm text-gray-500">${space.description}</div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        €${space.cost.toLocaleString()}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        ${space.adopted 
+                                            ? '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">✅ Adottato</span>'
+                                            : '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">🔴 Disponibile</span>'
+                                        }
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button onclick="openSpaceModal(${space.id}, '${space.name}')" 
+                                                class="text-indigo-600 hover:text-indigo-900">
+                                            🖼️ Cambia Foto
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                console.error('Error loading spaces:', error);
+                container.innerHTML = '<div class="text-red-500 text-center py-12">Errore nel caricamento degli spazi</div>';
+            }
+        }
+
+        async function loadMedia() {
+            try {
+                const response = await fetch('/api/media');
+                if (response.ok) {
+                    const media = await response.json();
+                    
+                    // Load logo
+                    if (media.logo) {
+                        document.getElementById('current-logo').classList.remove('hidden');
+                        document.getElementById('logo-preview').src = media.logo;
+                    }
+                    
+                    // Load carousel images
+                    const carouselContainer = document.getElementById('carousel-images');
+                    if (media.carousel && media.carousel.length > 0) {
+                        carouselContainer.innerHTML = media.carousel.map(img => `
+                            <div class="relative">
+                                <img src="${img.url}" alt="${img.caption}" class="w-full h-32 object-cover rounded-lg">
+                                <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 rounded-b-lg">
+                                    <div class="text-sm font-medium">${img.caption || 'Senza titolo'}</div>
+                                </div>
+                                <button onclick="deleteCarouselImage(${img.id})" class="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full">
+                                    ❌
+                                </button>
+                            </div>
+                        `).join('');
+                    } else {
+                        carouselContainer.innerHTML = '<div class="col-span-full text-gray-500 text-center py-8">Nessuna immagine carosello</div>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading media:', error);
+            }
+        }
+
+        async function loadAdoptions() {
+            const container = document.getElementById('adoptions-table-container');
+            
+            try {
+                const response = await fetch('/api/adoptions');
+                if (!response.ok) throw new Error('API Error');
+                
+                const adoptions = await response.json();
+                
+                if (adoptions.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-12">
+                            <div class="text-6xl mb-4">❤️</div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Nessuna adozione ancora</h3>
+                            <p class="text-gray-500">Le richieste di adozione appariranno qui</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = `
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sponsor</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spazio</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stato</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${adoptions.map(adoption => `
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-900">${adoption.sponsor_name}</div>
+                                            <div class="text-sm text-gray-500">${adoption.sponsor_email}</div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${adoption.space_name || 'N/A'}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                            ${adoption.status || 'pending'}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        ${new Date(adoption.created_at).toLocaleDateString('it-IT')}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                console.error('Error loading adoptions:', error);
+                container.innerHTML = '<div class="text-red-500 text-center py-12">Errore nel caricamento delle adozioni</div>';
+            }
+        }
+
+        // Modal functions
+        function openSpaceModal(spaceId, spaceName) {
+            const modal = document.createElement('div');
+            modal.id = 'space-modal';
+            modal.innerHTML = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div class="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+                        <h3 class="text-lg font-bold mb-4">Cambia foto: ${spaceName}</h3>
+                        <form onsubmit="uploadSpaceImage(event, ${spaceId})" id="space-upload-form">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Seleziona immagine</label>
+                                <input type="file" accept="image/*" required class="w-full p-2 border rounded-md">
+                            </div>
+                            <div class="flex gap-3">
+                                <button type="button" onclick="closeSpaceModal()" class="flex-1 px-4 py-2 bg-gray-200 rounded-md">
+                                    Annulla
+                                </button>
+                                <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md">
+                                    Upload
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function closeSpaceModal() {
+            const modal = document.getElementById('space-modal');
+            if (modal) modal.remove();
+        }
+
+        // Upload functions
+        async function uploadSpaceImage(event, spaceId) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            try {
+                const response = await fetch(`/api/spaces/${spaceId}/image`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    alert('Immagine aggiornata!');
+                    closeSpaceModal();
+                    loadSpaces();
+                } else {
+                    const error = await response.json();
+                    alert('Errore: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Errore durante l\'upload');
+            }
+        }
+
+        async function uploadLogo(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            const file = document.getElementById('logo-file').files[0];
+            formData.append('logo', file);
+            
+            try {
+                const response = await fetch('/api/media/logo', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    alert('Logo aggiornato!');
+                    loadMedia();
+                } else {
+                    const error = await response.json();
+                    alert('Errore: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Errore durante l\'upload');
+            }
+        }
+
+        async function uploadCarouselImage(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            const file = document.getElementById('carousel-file').files[0];
+            const caption = document.getElementById('carousel-caption').value;
+            const description = document.getElementById('carousel-description').value;
+            
+            formData.append('image', file);
+            formData.append('caption', caption);
+            formData.append('description', description);
+            
+            try {
+                const response = await fetch('/api/media/carousel', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    alert('Immagine aggiunta al carosello!');
+                    event.target.reset();
+                    loadMedia();
+                } else {
+                    const error = await response.json();
+                    alert('Errore: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Errore durante l\'upload');
+            }
+        }
+
+        async function deleteCarouselImage(imageId) {
+            if (!confirm('Sei sicuro di voler eliminare questa immagine?')) return;
+            
+            try {
+                const response = await fetch(`/api/media/carousel/${imageId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert('Immagine eliminata!');
+                    loadMedia();
+                } else {
+                    const error = await response.json();
+                    alert('Errore: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+                alert('Errore durante l\'eliminazione');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshAllData();
+        });
+    </script>
+</body>
+</html>
