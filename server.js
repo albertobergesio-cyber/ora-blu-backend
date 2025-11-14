@@ -588,9 +588,6 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'dashboard-admin-con-media.html'));
 });
 
-// Serve uploaded files
-app.use('/uploads', express.static(uploadsPath));
-
 // Serve frontend
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
