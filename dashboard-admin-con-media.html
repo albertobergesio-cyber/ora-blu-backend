@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - L'Ora Blu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .tab-active { @apply bg-blue-600 text-white; }
+        .tab-inactive { @apply bg-gray-200 text-gray-700 hover:bg-gray-300; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div x-data="adminPanel()" x-cloak>
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 py-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-slate-600 to-slate-700 rounded-lg flex items-center justify-center">
+                            <div class="w-6 h-6 bg-orange-500 rounded-full"></div>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">Dashboard Admin</h1>
+                            <p class="text-sm text-gray-600">L'Ora Blu - Gestione Campagna</p>
+                        </div>
+                    </div>
+                    <button @click="refreshData()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <svg class="w-4 h-4 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                        </svg>
+                        Aggiorna
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Tabs Navigation -->
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex space-x-1 bg-gray-200 rounded-lg p-1">
+                <button @click="activeTab = 'overview'" 
+                        :class="activeTab === 'overview' ? 'tab-active' : 'tab-inactive'" 
+                        class="px-4 py-2 rounded-md transition-colors">
+                    📊 Panoramica
+                </button>
+                <button @click="activeTab = 'spaces'" 
+                        :class="activeTab === 'spaces' ? 'tab-active' : 'tab-inactive'" 
+                        class="px-4 py-2 rounded-md transition-colors">
+                    🏠 Gestione Spazi
+                </button>
+                <button @click="activeTab = 'media'" 
+                        :class="activeTab === 'media' ? 'tab-active' : 'tab-inactive'" 
+                        class="px-4 py-2 rounded-md transition-colors">
+                    🖼️ Logo e Carosello
+                </button>
+                <button @click="activeTab = 'adoptions'" 
+                        :class="activeTab === 'adoptions' ? 'tab-active' : 'tab-inactive'" 
+                        class="px-4 py-2 rounded-md transition-colors">
+                    ❤️ Gestione Adozioni
+                </button>
+            </div>
+        </div>
+
+        <!-- Overview Tab -->
+        <div x-show="activeTab === 'overview'" class="max-w-7xl mx-auto px-4 py-6">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Spazi Totali</p>
+                            <p class="text-2xl font-bold text-gray-900" x-text="stats.totalSpaces || 0"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Spazi Adottati</p>
+                            <p class="text-2xl font-bold text-gray-900" x-text="stats.adoptedSpaces || 0"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Raccolto</p>
+                            <p class="text-2xl font-bold text-gray-900">€<span x-text="(stats.totalRaised || 0).toLocaleString()"></span></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-orange-500 rounded-md flex items-center justify-center">
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Progressi</p>
+                            <p class="text-2xl font-bold text-gray-900"><span x-text="(stats.progressPercentage || 0).toFixed(1)"></span>%</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Volontari</p>
+                            <p class="text-2xl font-bold text-gray-900" x-text="stats.volunteersAvailable || 0"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Media Management Tab -->
+        <div x-show="activeTab === 'media'" class="max-w-7xl mx-auto px-4 py-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <!-- Logo Management -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                        <svg class="w-6 h-6 mr-3 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
+                        </svg>
+                        Gestione Logo
+                    </h3>
+                    
+                    <!-- Current Logo -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold text-gray-700 mb-3">Logo Attuale</h4>
+                        <div x-show="media.logo" class="bg-gray-50 rounded-lg p-4 border-2 border-dashed border-gray-300">
+                            <img :src="'/api' + media.logo" alt="Logo attuale" class="max-h-32 mx-auto">
+                        </div>
+                        <div x-show="!media.logo" class="bg-gray-50 rounded-lg p-8 border-2 border-dashed border-gray-300 text-center">
+                            <svg class="w-12 h-12 mx-auto text-gray-400 mb-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
+                            </svg>
+                            <p class="text-gray-500">Nessun logo caricato</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Upload Logo -->
+                    <div>
+                        <h4 class="text-lg font-semibold text-gray-700 mb-3">Carica Nuovo Logo</h4>
+                        <form @submit.prevent="uploadLogo">
+                            <input type="file" accept="image/*" @change="logoFile = $event.target.files[0]" 
+                                   class="w-full mb-4 p-2 border border-gray-300 rounded-md">
+                            <button type="submit" :disabled="!logoFile || uploading" 
+                                    class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 transition-colors">
+                                <span x-show="!uploading">🔄 Carica Logo</span>
+                                <span x-show="uploading">Caricamento...</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Carousel Management -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6 flex items-center">
+                        <svg class="w-6 h-6 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        Gestione Carosello
+                    </h3>
+                    
+                    <!-- Upload Carousel Image -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold text-gray-700 mb-3">Aggiungi Immagine</h4>
+                        <form @submit.prevent="uploadCarouselImage">
+                            <input type="file" accept="image/*" @change="carouselFile = $event.target.files[0]" 
+                                   class="w-full mb-3 p-2 border border-gray-300 rounded-md">
+                            <input type="text" placeholder="Titolo immagine" x-model="carouselCaption"
+                                   class="w-full mb-3 p-2 border border-gray-300 rounded-md">
+                            <input type="text" placeholder="Descrizione" x-model="carouselDescription"
+                                   class="w-full mb-3 p-2 border border-gray-300 rounded-md">
+                            <button type="submit" :disabled="!carouselFile || uploading" 
+                                    class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:bg-gray-400 transition-colors">
+                                <span x-show="!uploading">➕ Aggiungi al Carosello</span>
+                                <span x-show="uploading">Caricamento...</span>
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Carousel Images List -->
+                    <div>
+                        <h4 class="text-lg font-semibold text-gray-700 mb-3">Immagini Carosello</h4>
+                        <div x-show="media.carousel && media.carousel.length === 0" 
+                             class="bg-gray-50 rounded-lg p-8 border-2 border-dashed border-gray-300 text-center">
+                            <svg class="w-12 h-12 mx-auto text-gray-400 mb-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                            <p class="text-gray-500">Nessuna immagine nel carosello</p>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <template x-for="image in media.carousel || []" :key="image.id">
+                                <div class="flex items-center gap-4 p-3 border border-gray-200 rounded-lg">
+                                    <img :src="'/api' + image.url" :alt="image.caption" class="w-16 h-16 object-cover rounded-md">
+                                    <div class="flex-1">
+                                        <p class="font-medium text-gray-900" x-text="image.caption || 'Senza titolo'"></p>
+                                        <p class="text-sm text-gray-500" x-text="image.description || 'Senza descrizione'"></p>
+                                    </div>
+                                    <button @click="deleteCarouselImage(image.id)" 
+                                            class="text-red-600 hover:text-red-800 p-2">
+                                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9zM4 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 012 0v6a1 1 0 11-2 0V9zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V9z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function adminPanel() {
+            return {
+                activeTab: 'overview',
+                stats: {},
+                media: { logo: null, carousel: [] },
+                uploading: false,
+                logoFile: null,
+                carouselFile: null,
+                carouselCaption: '',
+                carouselDescription: '',
+
+                async init() {
+                    await this.refreshData();
+                    await this.loadMedia();
+                },
+
+                async refreshData() {
+                    try {
+                        const response = await fetch('/api/stats/detailed');
+                        if (response.ok) {
+                            this.stats = await response.json();
+                        }
+                    } catch (error) {
+                        console.error('Error loading stats:', error);
+                        alert('Errore nel caricamento delle statistiche');
+                    }
+                },
+
+                async loadMedia() {
+                    try {
+                        const response = await fetch('/api/media');
+                        if (response.ok) {
+                            this.media = await response.json();
+                        }
+                    } catch (error) {
+                        console.error('Error loading media:', error);
+                        alert('Errore nel caricamento dei media');
+                    }
+                },
+
+                async uploadLogo() {
+                    if (!this.logoFile) return;
+                    
+                    this.uploading = true;
+                    try {
+                        const formData = new FormData();
+                        formData.append('logo', this.logoFile);
+                        
+                        const response = await fetch('/api/media/logo', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (response.ok) {
+                            await this.loadMedia();
+                            this.logoFile = null;
+                            alert('Logo caricato con successo!');
+                        } else {
+                            const error = await response.json();
+                            alert('Errore: ' + error.error);
+                        }
+                    } catch (error) {
+                        console.error('Error uploading logo:', error);
+                        alert('Errore nel caricamento del logo');
+                    } finally {
+                        this.uploading = false;
+                    }
+                },
+
+                async uploadCarouselImage() {
+                    if (!this.carouselFile) return;
+                    
+                    this.uploading = true;
+                    try {
+                        const formData = new FormData();
+                        formData.append('image', this.carouselFile);
+                        formData.append('caption', this.carouselCaption);
+                        formData.append('description', this.carouselDescription);
+                        formData.append('position', (this.media.carousel || []).length);
+                        
+                        const response = await fetch('/api/media/carousel', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (response.ok) {
+                            await this.loadMedia();
+                            this.carouselFile = null;
+                            this.carouselCaption = '';
+                            this.carouselDescription = '';
+                            alert('Immagine aggiunta al carosello!');
+                        } else {
+                            const error = await response.json();
+                            alert('Errore: ' + error.error);
+                        }
+                    } catch (error) {
+                        console.error('Error uploading carousel image:', error);
+                        alert('Errore nel caricamento dell\'immagine');
+                    } finally {
+                        this.uploading = false;
+                    }
+                },
+
+                async deleteCarouselImage(id) {
+                    if (!confirm('Sei sicuro di voler eliminare questa immagine?')) return;
+                    
+                    try {
+                        const response = await fetch(`/api/media/carousel/${id}`, {
+                            method: 'DELETE'
+                        });
+                        
+                        if (response.ok) {
+                            await this.loadMedia();
+                            alert('Immagine eliminata!');
+                        } else {
+                            const error = await response.json();
+                            alert('Errore: ' + error.error);
+                        }
+                    } catch (error) {
+                        console.error('Error deleting image:', error);
+                        alert('Errore nell\'eliminazione dell\'immagine');
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
