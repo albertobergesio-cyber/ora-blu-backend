@@ -453,174 +453,112 @@ app.get('/api/stats/detailed', (req, res) => {
     });
 });
 
-// =================
-// MEDIA MANAGEMENT
-// =================
-
-// Tabella per gestire logo e carosello
-db.run(`
-  CREATE TABLE IF NOT EXISTS media (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    type TEXT NOT NULL, -- 'logo' o 'carousel'
-    filename TEXT NOT NULL,
-    url TEXT NOT NULL,
-    caption TEXT,
-    description TEXT,
-    position INTEGER DEFAULT 0, -- per ordinare le immagini del carosello
-    active BOOLEAN DEFAULT 1,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
-`);
-
-// GET - Ottieni logo e immagini carosello
-app.get('/api/media', (req, res) => {
-  const queries = {
-    logo: 'SELECT * FROM media WHERE type = "logo" AND active = 1 ORDER BY created_at DESC LIMIT 1',
-    carousel: 'SELECT * FROM media WHERE type = "carousel" AND active = 1 ORDER BY position, created_at'
-  };
-  
-  const media = {};
-  let completed = 0;
-  
-  Object.keys(queries).forEach(type => {
-    db.all(queries[type], [], (err, rows) => {
-      if (err) {
-        console.error(`Errore caricamento ${type}:`, err.message);
-      } else {
-        if (type === 'logo') {
-          media.logo = rows.length > 0 ? rows[0].url : null;
-        } else {
-          media.carousel = rows;
-        }
-      }
-      
-      completed++;
-      if (completed === Object.keys(queries).length) {
-        res.json(media);
-      }
-    });
-  });
-});
-
-// POST - Upload logo
-app.post('/api/media/logo', upload.single('logo'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'Nessun file caricato' });
-  }
-
-  const url = `/uploads/${req.file.filename}`;
-  
-  // Disattiva il logo precedente
-  db.run('UPDATE media SET active = 0 WHERE type = "logo"', [], (err) => {
-    if (err) {
-      console.error('Errore disattivazione logo precedente:', err.message);
-      return res.status(500).json({ error: 'Errore database' });
-    }
-    
-    // Inserisce il nuovo logo
-    db.run(
-      'INSERT INTO media (type, filename, url) VALUES (?, ?, ?)',
-      ['logo', req.file.filename, url],
-      function(err) {
-        if (err) {
-          console.error('Errore inserimento logo:', err.message);
-          return res.status(500).json({ error: 'Errore database' });
-        }
-        
-        res.json({ 
-          message: 'Logo caricato con successo',
-          id: this.lastID,
-          url: url
-        });
-      }
-    );
-  });
-});
-
-// POST - Upload immagine carosello
-app.post('/api/media/carousel', upload.single('image'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'Nessun file caricato' });
-  }
-
-  const { caption, description, position } = req.body;
-  const url = `/uploads/${req.file.filename}`;
-  
-  db.run(
-    'INSERT INTO media (type, filename, url, caption, description, position) VALUES (?, ?, ?, ?, ?, ?)',
-    ['carousel', req.file.filename, url, caption || '', description || '', parseInt(position) || 0],
-    function(err) {
-      if (err) {
-        console.error('Errore inserimento immagine carosello:', err.message);
-        return res.status(500).json({ error: 'Errore database' });
-      }
-      
-      res.json({ 
-        message: 'Immagine carosello caricata con successo',
-        id: this.lastID,
-        url: url
-      });
-    }
-  );
-});
-
-// DELETE - Elimina immagine carosello
-app.delete('/api/media/carousel/:id', (req, res) => {
-  const { id } = req.params;
-  
-  db.run('UPDATE media SET active = 0 WHERE id = ? AND type = "carousel"', [id], function(err) {
-    if (err) {
-      console.error('Errore eliminazione immagine carosello:', err.message);
-      return res.status(500).json({ error: 'Errore database' });
-    }
-    
-    if (this.changes === 0) {
-      return res.status(404).json({ error: 'Immagine non trovata' });
-    }
-    
-    res.json({ message: 'Immagine eliminata con successo' });
-  });
-});
-
-// Dashboard admin moderna
+// Dashboard admin semplice
 app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dashboard-admin-con-media.html'));
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="it">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Admin Dashboard - L'Ora Blu</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+    <body class="bg-gray-50 p-8">
+        <h1 class="text-3xl font-bold mb-8">Dashboard Admin - L'Ora Blu</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-lg font-semibold text-gray-700">Spazi Adottati</h3>
+                <p class="text-2xl font-bold text-green-600" id="adoptedSpaces">-</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-lg font-semibold text-gray-700">Raccolto</h3>
+                <p class="text-2xl font-bold text-blue-600" id="totalRaised">-</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold mb-4">Spazi</h2>
+            <div id="spacesList"></div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mt-6">
+            <h2 class="text-xl font-bold mb-4">Adozioni</h2>
+            <div id="adoptionsList"></div>
+        </div>
+
+        <script>
+            async function loadData() {
+                try {
+                    const [spacesRes, adoptionsRes, statsRes] = await Promise.all([
+                        fetch('/api/spaces'),
+                        fetch('/api/adoptions'),
+                        fetch('/api/stats')
+                    ]);
+                    
+                    const spaces = await spacesRes.json();
+                    const adoptions = await adoptionsRes.json();
+                    const stats = await statsRes.json();
+                    
+                    document.getElementById('adoptedSpaces').textContent = stats.adoptedSpaces;
+                    document.getElementById('totalRaised').textContent = '€' + stats.totalRaised.toLocaleString();
+                    
+                    document.getElementById('spacesList').innerHTML = spaces.map(space => 
+                        '<div class="border-b py-2">' +
+                        '<strong>' + space.name + '</strong> - €' + space.cost.toLocaleString() + 
+                        (space.adopted ? ' (Adottato da: ' + space.adoptedBy + ')' : ' (Disponibile)') +
+                        '</div>'
+                    ).join('');
+                    
+                    document.getElementById('adoptionsList').innerHTML = adoptions.map(adoption =>
+                        '<div class="border-b py-2">' +
+                        '<strong>' + adoption.spaceName + '</strong> - ' + adoption.sponsorName +
+                        (adoption.sponsorEmail ? ' (' + adoption.sponsorEmail + ')' : '') +
+                        ' - Status: ' + adoption.status +
+                        (adoption.wantsToHelp ? ' - 🤝 Volontario disponibile' : '') +
+                        '</div>'
+                    ).join('');
+                    
+                } catch (error) {
+                    console.error('Errore caricamento dati:', error);
+                }
+            }
+            
+            loadData();
+            setInterval(loadData, 30000); // Ricarica ogni 30 secondi
+        </script>
+    </body>
+    </html>
+  `);
 });
 
-// Serve frontend
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error('Global error:', err);
-  
-  if (err instanceof multer.MulterError) {
-    if (err.code === 'LIMIT_FILE_SIZE') {
+// Error handler
+app.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({ error: 'File troppo grande. Massimo 5MB.' });
     }
   }
   
+  console.error('Errore server:', error);
   res.status(500).json({ error: 'Errore interno del server' });
 });
 
 // Start server
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📊 Admin panel: http://localhost:${PORT}/admin`);
-    console.log(`🏠 Frontend: http://localhost:${PORT}`);
+  console.log(`🚀 Server in esecuzione su http://localhost:${PORT}`);
+  console.log(`📊 Dashboard admin: http://localhost:${PORT}/admin`);
 });
 
 // Graceful shutdown
 process.on('SIGINT', () => {
-  console.log('Chiusura server in corso...');
+  console.log('🔄 Chiusura server...');
   db.close((err) => {
     if (err) {
       console.error('Errore chiusura database:', err.message);
     } else {
-      console.log('Database chiuso correttamente.');
+      console.log('✅ Database chiuso.');
     }
     process.exit(0);
   });
