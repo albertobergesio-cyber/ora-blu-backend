@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'Ora Blu - Campagna Crowdfunding</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .carousel-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            overflow: hidden;
+            border-radius: 0.5rem;
+        }
+        .carousel-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .carousel-slide.active {
+            opacity: 1;
+        }
+        .carousel-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="flex items-center space-x-4">
+                <div class="flex-shrink-0">
+                    <img id="logo" src="" alt="L'Ora Blu" class="h-16 w-16 rounded-full object-cover hidden">
+                    <div id="default-logo" class="h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center">
+                        <span class="text-white text-xl font-bold">🏠</span>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">L'Ora Blu</h1>
+                    <p class="text-lg text-gray-600">Campagna di Crowdfunding - <span class="text-orange-500 font-bold">Facciamola bella!</span></p>
+                    <p class="text-sm text-gray-500">Libera Compagnia di Arti & Mestieri Sociali - Cooperativa Sociale</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h2 class="text-4xl font-bold mb-6">Aiutaci a ristrutturare la casa de L'Ora Blu</h2>
+            <p class="text-xl mb-8 max-w-3xl mx-auto">
+                L'Ora Blu è una comunità tutelare per minori (2–12 anni) che accoglie bambini e bambine vittime di 
+                maltrattamento, abuso o in situazioni familiari pregiudizievoli. Dopo 30 anni, la struttura ha bisogno di lavori per 
+                diventare ancora più accogliente, una casa bella e stimolante in cui ricominciare a costruire il proprio futuro.
+            </p>
+            <div class="flex justify-center gap-4">
+                <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                    <div class="text-2xl font-bold" id="total-collected">€0</div>
+                    <div class="text-sm">Raccolto</div>
+                </div>
+                <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                    <div class="text-2xl font-bold" id="spaces-adopted">0</div>
+                    <div class="text-sm">Spazi Adottati</div>
+                </div>
+                <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                    <div class="text-2xl font-bold" id="progress-percent">0%</div>
+                    <div class="text-sm">Progresso</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Carousel Section -->
+    <section id="carousel-section" class="py-16 bg-white" style="display: none;">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="carousel-container">
+                <div id="carousel-slides">
+                    <!-- Slides populated by JavaScript -->
+                </div>
+                
+                <!-- Navigation -->
+                <button onclick="prevSlide()" class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-75">
+                    &#8249;
+                </button>
+                <button onclick="nextSlide()" class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-75">
+                    &#8250;
+                </button>
+                
+                <!-- Dots -->
+                <div id="carousel-dots" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                    <!-- Dots populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Spaces Section -->
+    <section class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-12">
+                <h3 class="text-3xl font-bold text-gray-900 mb-4">Scegli uno spazio da adottare</h3>
+                <p class="text-lg text-gray-600">Ogni spazio che adotti contribuisce a creare un ambiente più accogliente per i bambini</p>
+            </div>
+            
+            <div id="spaces-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Spaces populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Adoption Modal -->
+    <div id="adoption-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <h3 class="text-2xl font-bold mb-6" id="modal-space-name">Adotta questo spazio</h3>
+            
+            <form id="adoption-form" onsubmit="submitAdoption(event)">
+                <input type="hidden" id="selected-space-id">
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nome Completo *</label>
+                        <input type="text" id="sponsor-name" required class="w-full p-3 border border-gray-300 rounded-lg">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="sponsor-email" class="w-full p-3 border border-gray-300 rounded-lg">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
+                        <input type="tel" id="sponsor-phone" class="w-full p-3 border border-gray-300 rounded-lg">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Ricevuta di Pagamento</label>
+                        <input type="file" id="payment-proof" accept="image/*,application/pdf" class="w-full p-3 border border-gray-300 rounded-lg">
+                        <p class="text-xs text-gray-500 mt-1">IBAN: IT86Q0501801600000011057007</p>
+                        <button type="button" onclick="copyIban()" class="text-xs text-blue-600 hover:text-blue-800">📋 Copia IBAN</button>
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <input type="checkbox" id="wants-to-help" class="mr-2">
+                        <label for="wants-to-help" class="text-sm">Voglio aiutare come volontario</label>
+                    </div>
+                </div>
+                
+                <div class="flex gap-4 mt-8">
+                    <button type="button" onclick="closeModal()" class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">
+                        Annulla
+                    </button>
+                    <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        Conferma Adozione
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        let carouselImages = [];
+
+        // Load initial data
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            loadSpaces();
+            loadMedia();
+        });
+
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                
+                document.getElementById('total-collected').textContent = `€${stats.collected_amount.toLocaleString()}`;
+                document.getElementById('spaces-adopted').textContent = stats.adopted_spaces;
+                document.getElementById('progress-percent').textContent = `${stats.progress_percentage}%`;
+                
+                console.log('✅ Stats loaded');
+            } catch (error) {
+                console.error('❌ Error loading stats:', error);
+            }
+        }
+
+        // Load spaces
+        async function loadSpaces() {
+            try {
+                const response = await fetch('/api/spaces');
+                const spaces = await response.json();
+                
+                const spacesGrid = document.getElementById('spaces-grid');
+                spacesGrid.innerHTML = spaces.map(space => `
+                    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                        <div class="h-48 bg-gray-200 relative">
+                            ${space.image_url 
+                                ? `<img src="${space.image_url}" alt="${space.name}" class="w-full h-full object-cover">`
+                                : `<div class="w-full h-full flex items-center justify-center text-gray-400 text-4xl">🏠</div>`
+                            }
+                            ${space.adopted 
+                                ? '<div class="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-sm">✅ Adottato</div>'
+                                : '<div class="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded text-sm">🔴 Disponibile</div>'
+                            }
+                        </div>
+                        <div class="p-6">
+                            <h4 class="text-xl font-bold text-gray-900 mb-2">${space.name}</h4>
+                            <p class="text-gray-600 mb-4">${space.description}</p>
+                            <div class="flex items-center justify-between">
+                                <span class="text-2xl font-bold text-blue-600">€${space.cost.toLocaleString()}</span>
+                                ${space.adopted 
+                                    ? '<span class="text-green-600 font-medium">Già adottato</span>'
+                                    : `<button onclick="openAdoptionModal(${space.id}, '${space.name}', ${space.cost})" class="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600">Adotta</button>`
+                                }
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                console.log(`✅ Loaded ${spaces.length} spaces`);
+            } catch (error) {
+                console.error('❌ Error loading spaces:', error);
+            }
+        }
+
+        // Load media (logo and carousel)
+        async function loadMedia() {
+            try {
+                const response = await fetch('/api/media');
+                const media = await response.json();
+                
+                // Load logo
+                if (media.logo) {
+                    const logoImg = document.getElementById('logo');
+                    const defaultLogo = document.getElementById('default-logo');
+                    logoImg.src = media.logo;
+                    logoImg.classList.remove('hidden');
+                    defaultLogo.classList.add('hidden');
+                }
+                
+                // Load carousel
+                if (media.carousel && media.carousel.length > 0) {
+                    carouselImages = media.carousel;
+                    setupCarousel();
+                }
+                
+                console.log('✅ Media loaded');
+            } catch (error) {
+                console.error('❌ Error loading media:', error);
+            }
+        }
+
+        // Setup carousel
+        function setupCarousel() {
+            const carouselSection = document.getElementById('carousel-section');
+            const slidesContainer = document.getElementById('carousel-slides');
+            const dotsContainer = document.getElementById('carousel-dots');
+            
+            if (carouselImages.length === 0) return;
+            
+            // Show carousel section
+            carouselSection.style.display = 'block';
+            
+            // Generate slides
+            slidesContainer.innerHTML = carouselImages.map((image, index) => `
+                <div class="carousel-slide ${index === 0 ? 'active' : ''}">
+                    <img src="${image.url}" alt="${image.caption || 'Immagine carosello'}">
+                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/75 via-black/50 to-transparent p-8">
+                        <h3 class="text-white font-bold text-2xl mb-2">${image.caption || ''}</h3>
+                        <p class="text-white/90 text-lg">${image.description || ''}</p>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Generate dots
+            dotsContainer.innerHTML = carouselImages.map((_, index) => `
+                <button onclick="goToSlide(${index})" class="w-3 h-3 rounded-full ${index === 0 ? 'bg-white' : 'bg-white/50'} transition-colors"></button>
+            `).join('');
+            
+            // Auto-advance carousel
+            if (carouselImages.length > 1) {
+                setInterval(() => {
+                    nextSlide();
+                }, 5000);
+            }
+        }
+
+        // Carousel navigation
+        function goToSlide(slideIndex) {
+            const slides = document.querySelectorAll('.carousel-slide');
+            const dots = document.querySelectorAll('#carousel-dots button');
+            
+            slides.forEach(slide => slide.classList.remove('active'));
+            dots.forEach(dot => dot.className = 'w-3 h-3 rounded-full bg-white/50 transition-colors');
+            
+            slides[slideIndex].classList.add('active');
+            dots[slideIndex].className = 'w-3 h-3 rounded-full bg-white transition-colors';
+            
+            currentSlide = slideIndex;
+        }
+
+        function nextSlide() {
+            const nextIndex = (currentSlide + 1) % carouselImages.length;
+            goToSlide(nextIndex);
+        }
+
+        function prevSlide() {
+            const prevIndex = (currentSlide - 1 + carouselImages.length) % carouselImages.length;
+            goToSlide(prevIndex);
+        }
+
+        // Modal functions
+        function openAdoptionModal(spaceId, spaceName, spaceCost) {
+            document.getElementById('selected-space-id').value = spaceId;
+            document.getElementById('modal-space-name').textContent = `Adotta: ${spaceName} (€${spaceCost.toLocaleString()})`;
+            document.getElementById('adoption-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('adoption-modal').classList.add('hidden');
+            document.getElementById('adoption-form').reset();
+        }
+
+        // Copy IBAN
+        function copyIban() {
+            navigator.clipboard.writeText('IT86Q0501801600000011057007').then(() => {
+                alert('IBAN copiato negli appunti!');
+            });
+        }
+
+        // Submit adoption
+        async function submitAdoption(event) {
+            event.preventDefault();
+            
+            const spaceId = document.getElementById('selected-space-id').value;
+            const formData = new FormData();
+            
+            formData.append('sponsorName', document.getElementById('sponsor-name').value);
+            formData.append('sponsorEmail', document.getElementById('sponsor-email').value);
+            formData.append('sponsorPhone', document.getElementById('sponsor-phone').value);
+            formData.append('wantsToHelp', document.getElementById('wants-to-help').checked ? 'on' : '');
+            
+            const paymentProof = document.getElementById('payment-proof').files[0];
+            if (paymentProof) {
+                formData.append('paymentProof', paymentProof);
+            }
+            
+            try {
+                const response = await fetch(`/api/spaces/${spaceId}/adopt`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    alert('✅ Adozione registrata con successo! Grazie per il tuo sostegno!');
+                    closeModal();
+                    loadSpaces();
+                    loadStats();
+                } else {
+                    const error = await response.json();
+                    alert('❌ Errore: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Submission error:', error);
+                alert('❌ Errore durante l\'invio della richiesta');
+            }
+        }
+    </script>
+
+</body>
+</html>

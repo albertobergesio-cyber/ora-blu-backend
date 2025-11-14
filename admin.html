@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - L'Ora Blu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .active-tab { background: #3b82f6; color: white; }
+        .inactive-tab { background: #e5e7eb; color: #374151; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    
+    <div class="max-w-6xl mx-auto p-6">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">🏠 L'Ora Blu - Dashboard Admin</h1>
+        
+        <!-- Tabs -->
+        <div class="flex space-x-2 mb-6">
+            <button onclick="showTab('stats')" id="tab-stats" class="active-tab px-4 py-2 rounded-lg">📊 Statistiche</button>
+            <button onclick="showTab('spaces')" id="tab-spaces" class="inactive-tab px-4 py-2 rounded-lg">🏠 Spazi</button>
+            <button onclick="showTab('media')" id="tab-media" class="inactive-tab px-4 py-2 rounded-lg">🖼️ Media</button>
+            <button onclick="showTab('adoptions')" id="tab-adoptions" class="inactive-tab px-4 py-2 rounded-lg">❤️ Adozioni</button>
+        </div>
+
+        <!-- Stats Tab -->
+        <div id="content-stats" class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-bold mb-4">📊 Statistiche Campagna</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-blue-50 p-4 rounded-lg text-center">
+                    <div class="text-2xl font-bold text-blue-600" id="stat-total">-</div>
+                    <div class="text-sm text-gray-600">Spazi Totali</div>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg text-center">
+                    <div class="text-2xl font-bold text-green-600" id="stat-adopted">-</div>
+                    <div class="text-sm text-gray-600">Spazi Adottati</div>
+                </div>
+                <div class="bg-yellow-50 p-4 rounded-lg text-center">
+                    <div class="text-2xl font-bold text-yellow-600" id="stat-collected">-</div>
+                    <div class="text-sm text-gray-600">Raccolto</div>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-lg text-center">
+                    <div class="text-2xl font-bold text-purple-600" id="stat-progress">-</div>
+                    <div class="text-sm text-gray-600">Progresso</div>
+                </div>
+            </div>
+            <button onclick="loadStats()" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg">🔄 Aggiorna</button>
+        </div>
+
+        <!-- Spaces Tab -->
+        <div id="content-spaces" class="bg-white rounded-lg shadow-lg p-6 hidden">
+            <h2 class="text-xl font-bold mb-4">🏠 Gestione Spazi</h2>
+            <div id="spaces-list">Caricamento...</div>
+        </div>
+
+        <!-- Media Tab -->
+        <div id="content-media" class="bg-white rounded-lg shadow-lg p-6 hidden">
+            <h2 class="text-xl font-bold mb-4">🖼️ Gestione Media</h2>
+            
+            <!-- Logo Section -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold mb-4">Logo</h3>
+                <div id="logo-preview" class="mb-4"></div>
+                <form onsubmit="uploadLogo(event)" class="space-y-3">
+                    <input type="file" id="logo-file" accept="image/*" class="w-full p-2 border rounded">
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">📤 Carica Logo</button>
+                </form>
+            </div>
+
+            <!-- Carousel Section -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold mb-4">Carosello</h3>
+                <div id="carousel-preview" class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+                <form onsubmit="uploadCarousel(event)" class="space-y-3">
+                    <input type="file" id="carousel-file" accept="image/*" class="w-full p-2 border rounded" required>
+                    <input type="text" id="carousel-caption" placeholder="Titolo" class="w-full p-2 border rounded">
+                    <textarea id="carousel-description" placeholder="Descrizione" class="w-full p-2 border rounded" rows="3"></textarea>
+                    <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">📤 Aggiungi al Carosello</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Adoptions Tab -->
+        <div id="content-adoptions" class="bg-white rounded-lg shadow-lg p-6 hidden">
+            <h2 class="text-xl font-bold mb-4">❤️ Gestione Adozioni</h2>
+            <div id="adoptions-list">Caricamento...</div>
+        </div>
+
+    </div>
+
+    <!-- Modal for space image upload -->
+    <div id="image-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+            <h3 class="text-lg font-bold mb-4" id="modal-title">Carica Immagine</h3>
+            <form onsubmit="uploadSpaceImage(event)" id="space-image-form">
+                <input type="hidden" id="space-id">
+                <input type="file" id="space-image-file" accept="image/*" class="w-full p-2 border rounded mb-4" required>
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeModal()" class="flex-1 px-4 py-2 bg-gray-200 rounded">Annulla</button>
+                    <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Tab Management
+        function showTab(tabName) {
+            // Hide all tabs
+            ['stats', 'spaces', 'media', 'adoptions'].forEach(tab => {
+                document.getElementById(`content-${tab}`).classList.add('hidden');
+                document.getElementById(`tab-${tab}`).className = 'inactive-tab px-4 py-2 rounded-lg';
+            });
+            
+            // Show selected tab
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabName}`).className = 'active-tab px-4 py-2 rounded-lg';
+            
+            // Load data for specific tabs
+            if (tabName === 'stats') loadStats();
+            if (tabName === 'spaces') loadSpaces();
+            if (tabName === 'media') loadMedia();
+            if (tabName === 'adoptions') loadAdoptions();
+        }
+
+        // Load Stats
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                
+                document.getElementById('stat-total').textContent = stats.total_spaces;
+                document.getElementById('stat-adopted').textContent = stats.adopted_spaces;
+                document.getElementById('stat-collected').textContent = `€${stats.collected_amount.toLocaleString()}`;
+                document.getElementById('stat-progress').textContent = `${stats.progress_percentage}%`;
+                
+                console.log('✅ Stats loaded:', stats);
+            } catch (error) {
+                console.error('❌ Error loading stats:', error);
+                document.getElementById('stat-total').textContent = 'Errore';
+            }
+        }
+
+        // Load Spaces
+        async function loadSpaces() {
+            try {
+                const response = await fetch('/api/spaces');
+                const spaces = await response.json();
+                
+                const spacesList = document.getElementById('spaces-list');
+                
+                if (spaces.length === 0) {
+                    spacesList.innerHTML = '<p class="text-gray-500">Nessuno spazio trovato</p>';
+                    return;
+                }
+                
+                spacesList.innerHTML = `
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full table-auto">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left">Nome</th>
+                                    <th class="px-4 py-2 text-left">Descrizione</th>
+                                    <th class="px-4 py-2 text-left">Costo</th>
+                                    <th class="px-4 py-2 text-left">Stato</th>
+                                    <th class="px-4 py-2 text-left">Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                ${spaces.map(space => `
+                                    <tr>
+                                        <td class="px-4 py-2 font-medium">${space.name}</td>
+                                        <td class="px-4 py-2 text-sm text-gray-600">${space.description}</td>
+                                        <td class="px-4 py-2">€${space.cost.toLocaleString()}</td>
+                                        <td class="px-4 py-2">
+                                            ${space.adopted 
+                                                ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">✅ Adottato</span>'
+                                                : '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">🔴 Disponibile</span>'
+                                            }
+                                        </td>
+                                        <td class="px-4 py-2">
+                                            <button onclick="openImageModal(${space.id}, '${space.name}')" 
+                                                    class="text-blue-600 hover:text-blue-800 text-sm">
+                                                🖼️ Foto
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                console.log(`✅ Loaded ${spaces.length} spaces`);
+            } catch (error) {
+                console.error('❌ Error loading spaces:', error);
+                document.getElementById('spaces-list').innerHTML = '<p class="text-red-500">Errore nel caricamento</p>';
+            }
+        }
+
+        // Load Media
+        async function loadMedia() {
+            try {
+                const response = await fetch('/api/media');
+                const media = await response.json();
+                
+                // Logo preview
+                const logoPreview = document.getElementById('logo-preview');
+                if (media.logo) {
+                    logoPreview.innerHTML = `<img src="${media.logo}" alt="Logo attuale" class="h-20 w-auto border rounded">`;
+                } else {
+                    logoPreview.innerHTML = '<p class="text-gray-500">Nessun logo caricato</p>';
+                }
+                
+                // Carousel preview
+                const carouselPreview = document.getElementById('carousel-preview');
+                if (media.carousel && media.carousel.length > 0) {
+                    carouselPreview.innerHTML = media.carousel.map(img => `
+                        <div class="relative">
+                            <img src="${img.url}" alt="${img.caption}" class="w-full h-32 object-cover rounded">
+                            <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white p-2">
+                                <div class="text-sm font-medium">${img.caption || 'Senza titolo'}</div>
+                            </div>
+                            <button onclick="deleteCarouselImage(${img.id})" 
+                                    class="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full text-xs">
+                                ❌
+                            </button>
+                        </div>
+                    `).join('');
+                } else {
+                    carouselPreview.innerHTML = '<p class="text-gray-500 col-span-full">Nessuna immagine carosello</p>';
+                }
+                
+                console.log('✅ Media loaded');
+            } catch (error) {
+                console.error('❌ Error loading media:', error);
+            }
+        }
+
+        // Load Adoptions
+        async function loadAdoptions() {
+            try {
+                const response = await fetch('/api/adoptions');
+                const adoptions = await response.json();
+                
+                const adoptionsList = document.getElementById('adoptions-list');
+                
+                if (adoptions.length === 0) {
+                    adoptionsList.innerHTML = '<p class="text-gray-500">Nessuna adozione ancora</p>';
+                    return;
+                }
+                
+                adoptionsList.innerHTML = `
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full table-auto">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left">Sponsor</th>
+                                    <th class="px-4 py-2 text-left">Spazio</th>
+                                    <th class="px-4 py-2 text-left">Email</th>
+                                    <th class="px-4 py-2 text-left">Stato</th>
+                                    <th class="px-4 py-2 text-left">Data</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                ${adoptions.map(adoption => `
+                                    <tr>
+                                        <td class="px-4 py-2 font-medium">${adoption.sponsor_name}</td>
+                                        <td class="px-4 py-2">${adoption.space_name || 'N/A'}</td>
+                                        <td class="px-4 py-2 text-sm">${adoption.sponsor_email || 'N/A'}</td>
+                                        <td class="px-4 py-2">
+                                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                                                ${adoption.status}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-2 text-sm">
+                                            ${new Date(adoption.created_at).toLocaleDateString('it-IT')}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                console.log(`✅ Loaded ${adoptions.length} adoptions`);
+            } catch (error) {
+                console.error('❌ Error loading adoptions:', error);
+                document.getElementById('adoptions-list').innerHTML = '<p class="text-red-500">Errore nel caricamento</p>';
+            }
+        }
+
+        // Modal Functions
+        function openImageModal(spaceId, spaceName) {
+            document.getElementById('space-id').value = spaceId;
+            document.getElementById('modal-title').textContent = `Carica foto: ${spaceName}`;
+            document.getElementById('image-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('image-modal').classList.add('hidden');
+            document.getElementById('space-image-form').reset();
+        }
+
+        // Upload Functions
+        async function uploadSpaceImage(event) {
+            event.preventDefault();
+            const spaceId = document.getElementById('space-id').value;
+            const file = document.getElementById('space-image-file').files[0];
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            try {
+                const response = await fetch(`/api/spaces/${spaceId}/image`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    alert('✅ Immagine caricata!');
+                    closeModal();
+                    loadSpaces();
+                } else {
+                    const error = await response.json();
+                    alert('❌ Errore: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('❌ Errore durante il caricamento');
+            }
+        }
+
+        async function uploadLogo(event) {
+            event.preventDefault();
+            const file = document.getElementById('logo-file').files[0];
+            
+            const formData = new FormData();
+            formData.append('logo', file);
+            
+            try {
+                const response = await fetch('/api/media/logo', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    alert('✅ Logo caricato!');
+                    loadMedia();
+                } else {
+                    const error = await response.json();
+                    alert('❌ Errore: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('❌ Errore durante il caricamento');
+            }
+        }
+
+        async function uploadCarousel(event) {
+            event.preventDefault();
+            const file = document.getElementById('carousel-file').files[0];
+            const caption = document.getElementById('carousel-caption').value;
+            const description = document.getElementById('carousel-description').value;
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('caption', caption);
+            formData.append('description', description);
+            
+            try {
+                const response = await fetch('/api/media/carousel', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    alert('✅ Immagine aggiunta al carosello!');
+                    event.target.reset();
+                    loadMedia();
+                } else {
+                    const error = await response.json();
+                    alert('❌ Errore: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('❌ Errore durante il caricamento');
+            }
+        }
+
+        async function deleteCarouselImage(imageId) {
+            if (!confirm('Sei sicuro di voler eliminare questa immagine?')) return;
+            
+            try {
+                const response = await fetch(`/api/media/carousel/${imageId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert('✅ Immagine eliminata!');
+                    loadMedia();
+                } else {
+                    const error = await response.json();
+                    alert('❌ Errore: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+                alert('❌ Errore durante l\'eliminazione');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            console.log('✅ Dashboard initialized');
+        });
+    </script>
+</body>
+</html>
